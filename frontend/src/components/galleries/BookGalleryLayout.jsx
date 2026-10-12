@@ -2,54 +2,129 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import "./BookGalleryLayout.css";
 import {
   X,
-  Layers,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
   Volume2,
   VolumeX,
   Play,
   Pause,
-  Maximize2,
-  Minimize2,
-  ChevronLeft,
-  ChevronRight,
   RotateCcw,
   Sparkles,
-  BookOpen
+  Layers,
+  ZoomIn,
+  Bookmark,
+  Calendar,
+  User,
+  Eye,
+  Grid,
+  Image as ImageIcon,
+  Check
 } from "lucide-react";
 
 /**
- * Format image URL helper: prepends backend port 5001 if relative path
+ * Format image URL helper
  */
-const getImageUrl = (url) => {
+const getMediaUrl = (url) => {
   if (!url) return "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `http://localhost:5001${url.startsWith("/") ? "" : "/"}${url}`;
+  const baseUrl = (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, "");
+  return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
 /**
- * Interactive 3D Photobook Modal Engine (1:1 Replica from post-book-layout)
+ * Photorealistic Spiral Coil Wire Binding (matches spiral notebook look)
+ */
+function SpiralCoilBinding({ height = 620 }) {
+  const pitch = 22; // Distance between each coil ring in px
+  const ringCount = Math.max(12, Math.floor((height - 30) / pitch));
+  const rings = Array.from({ length: ringCount });
+
+  return (
+    <div className="book-spiral-binding" aria-hidden="true">
+      <div className="book-spiral-shadow" />
+      <svg
+        width="34"
+        height={height}
+        viewBox={`0 0 34 ${height}`}
+        className="book-spiral-svg"
+      >
+        <defs>
+          <linearGradient id="spiralGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#94a3b8" />
+            <stop offset="25%" stopColor="#1e293b" />
+            <stop offset="50%" stopColor="#e2e8f0" />
+            <stop offset="75%" stopColor="#0f172a" />
+            <stop offset="100%" stopColor="#020617" />
+          </linearGradient>
+          <radialGradient id="holeGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#020617" />
+            <stop offset="80%" stopColor="#0f172a" />
+            <stop offset="100%" stopColor="#334155" />
+          </radialGradient>
+        </defs>
+
+        {rings.map((_, idx) => {
+          const y = 18 + idx * pitch;
+          return (
+            <g key={idx}>
+              {/* Left page punched hole */}
+              <rect x="5" y={y + 1} width="5" height="9" rx="2.5" fill="url(#holeGrad)" />
+              {/* Right page punched hole */}
+              <rect x="24" y={y + 1} width="5" height="9" rx="2.5" fill="url(#holeGrad)" />
+
+              {/* Rear loop */}
+              <path
+                d={`M 8 ${y + 8} C 12 ${y + 12}, 22 ${y + 12}, 26 ${y + 8}`}
+                fill="none"
+                stroke="#0f172a"
+                strokeWidth="2.5"
+                opacity="0.8"
+              />
+
+              {/* Front loop across spine */}
+              <path
+                d={`M 7 ${y + 5} C 11 ${y - 4}, 23 ${y - 4}, 27 ${y + 5}`}
+                fill="none"
+                stroke="url(#spiralGrad)"
+                strokeWidth="3.2"
+                strokeLinecap="round"
+              />
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Modern High-Performance Photobook Modal
  */
 const BookGalleryLayout = ({ gallery, onClose }) => {
-  const [currentSpread, setCurrentSpread] = useState(0);
+  const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
+  const [bindingType, setBindingType] = useState("hardcover"); // "hardcover" | "spiral"
+  const [viewMode, setViewMode] = useState("spread"); // "spread" | "single"
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoPlay, setAutoPlay] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [lightboxData, setLightboxData] = useState(null); // { url, title, desc }
+  const [filmstripOpen, setFilmstripOpen] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
+  const [isFlipping, setIsFlipping] = useState(null); // 'next' | 'prev' | null
 
-  const containerRef = useRef(null);
-  const bookContainerRef = useRef(null);
+  const modalContainerRef = useRef(null);
   const audioContextRef = useRef(null);
   const autoPlayTimerRef = useRef(null);
-  const flipTimerRef = useRef(null);
-  const currentSpreadRef = useRef(0);
 
-  // Photos from gallery
+  // Photos array
   const photos = useMemo(() => {
     if (!gallery || !Array.isArray(gallery.images)) return [];
-    return gallery.images.filter((img) => img && img.url);
+    return gallery.images.filter((img) => img && (img.url || img.secure_url));
   }, [gallery]);
 
-  // Lock body scroll when popup is open
+  // Lock body scroll while popup is open
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -58,19 +133,31 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
     };
   }, []);
 
-  // Web Audio synthetic paper rustle flip sound
-  const playPageFlipSound = useCallback(() => {
+  // Detect screen size: Auto single page on small devices
+  useEffect(() => {
+    const checkWidth = () => {
+      if (window.innerWidth < 860) {
+        setViewMode("single");
+      }
+    };
+    checkWidth();
+    window.addEventListener("resize", checkWidth);
+    return () => window.removeEventListener("resize", checkWidth);
+  }, []);
+
+  // Web Audio synthetic crisp paper rustle sound
+  const playPageTurnSound = useCallback(() => {
     if (!soundEnabled) return;
     try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        audioContextRef.current = new AudioCtx();
       }
       const ctx = audioContextRef.current;
-      if (ctx.state === "suspended") {
-        ctx.resume();
-      }
+      if (ctx.state === "suspended") ctx.resume();
 
-      const duration = 0.14;
+      const duration = 0.18;
       const bufferSize = ctx.sampleRate * duration;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -79,296 +166,229 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
         lastOut = (lastOut + 0.02 * white) / 1.02;
-        const decay = Math.pow(1 - i / bufferSize, 2.2);
-        data[i] = lastOut * decay * 1.5;
+        const decay = Math.pow(1 - i / bufferSize, 2.5);
+        data[i] = lastOut * decay * 1.6;
       }
 
-      const noiseNode = ctx.createBufferSource();
-      noiseNode.buffer = buffer;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
 
       const filter = ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(1100, ctx.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(280, ctx.currentTime + duration);
+      filter.frequency.setValueAtTime(1400, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + duration);
 
-      const gainNode = ctx.createGain();
-      gainNode.gain.setValueAtTime(0.45, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.005, ctx.currentTime + duration);
 
-      noiseNode.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      noiseNode.start();
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start();
     } catch {
-      // Graceful fallback
+      // Audio autoplay policy fallback
     }
   }, [soundEnabled]);
 
   /**
-   * Structure photos into dynamically generated spreads and leaves
+   * Curate gallery photos into designed 2-Page Spreads
    */
-  const { leaves, spreadsInfo } = useMemo(() => {
-    const rawLeaves = [];
-    const spreads = [];
+  const spreads = useMemo(() => {
+    const list = [];
+    const totalPhotos = photos.length;
 
-    // Spread 0: Hardcover
-    spreads.push({
-      title: "Hardcover • " + (gallery?.title || "Gallery"),
-      previewImg: getImageUrl(gallery?.coverImage || photos[0]?.url)
+    // Spread 0: Hardcover Cover & Title Plate
+    list.push({
+      id: "cover",
+      type: "cover_spread",
+      title: "Hardcover Cover & Title Plate",
+      leftPage: {
+        type: "inside_front_cover",
+        galleryTitle: gallery?.title || "Photo Gallery",
+        category: gallery?.category?.name || "Editorial Collection",
+        date: gallery?.createdAt ? new Date(gallery.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
+        photographer: gallery?.author?.name || "Curator's Pick",
+        photoCount: totalPhotos,
+        description: gallery?.description || "An exclusive photobook showcase."
+      },
+      rightPage: {
+        type: "cover_showcase",
+        coverImage: getMediaUrl(gallery?.coverImage || gallery?.banner || photos[0]?.url),
+        galleryTitle: gallery?.title || "Photo Gallery",
+        subtitle: "Fine Art Photography Collection"
+      }
     });
 
     let photoIdx = 0;
-    const totalPhotos = photos.length;
-
-    const layoutTypes = [
-      "hero",
-      "dual",
-      "asymmetric",
-      "panorama",
-      "trio",
-      "polaroids",
-      "asymmetric-inv",
-      "quad"
-    ];
-    let layoutCounter = 0;
+    let spreadCount = 1;
     let pageNum = 1;
 
+    // Cycle through editorial layout pairings
+    const layoutPairings = [
+      { left: "hero_framed", right: "dual_stacked" },
+      { left: "polaroid_duo", right: "editorial_story" },
+      { left: "passepartout_minimal", right: "hero_bleed" },
+      { left: "triptych_mosaic", right: "quote_portrait" },
+      { left: "dual_stacked", right: "passepartout_minimal" }
+    ];
+
     while (photoIdx < totalPhotos) {
+      const pairing = layoutPairings[(spreadCount - 1) % layoutPairings.length];
       const remaining = totalPhotos - photoIdx;
-      const chosenLayout = layoutTypes[layoutCounter % layoutTypes.length];
-      layoutCounter++;
 
-      if (chosenLayout === "panorama" && remaining >= 1) {
-        const panoPhoto = photos[photoIdx++];
-        const prevPagePhotos = [photos[photoIdx % totalPhotos]];
+      let leftPhotos = [];
+      let rightPhotos = [];
 
-        rawLeaves.push({
-          front: {
-            type: "hero",
-            photos: prevPagePhotos,
-            pageNumber: pageNum++
-          },
-          back: {
-            type: "panorama-left",
-            photo: panoPhoto,
-            pageNumber: pageNum++
-          }
-        });
-
-        rawLeaves.push({
-          front: {
-            type: "panorama-right",
-            photo: panoPhoto,
-            pageNumber: pageNum++
-          },
-          back: {
-            type: "dual",
-            photos: [
-              photos[(photoIdx++) % totalPhotos],
-              photos[(photoIdx++) % totalPhotos]
-            ].filter(Boolean),
-            pageNumber: pageNum++
-          }
-        });
-
-        spreads.push({
-          title: `Spread • Pages ${pageNum - 3}–${pageNum - 2} • Panorama`,
-          previewImg: getImageUrl(panoPhoto?.url)
-        });
-        continue;
+      // Determine left page photos
+      if (pairing.left === "hero_framed" || pairing.left === "passepartout_minimal") {
+        if (remaining >= 1) leftPhotos.push(photos[photoIdx++]);
+      } else if (pairing.left === "polaroid_duo" || pairing.left === "dual_stacked") {
+        if (photoIdx < totalPhotos) leftPhotos.push(photos[photoIdx++]);
+        if (photoIdx < totalPhotos) leftPhotos.push(photos[photoIdx++]);
+      } else if (pairing.left === "triptych_mosaic") {
+        if (photoIdx < totalPhotos) leftPhotos.push(photos[photoIdx++]);
+        if (photoIdx < totalPhotos) leftPhotos.push(photos[photoIdx++]);
+        if (photoIdx < totalPhotos) leftPhotos.push(photos[photoIdx++]);
+      } else {
+        if (photoIdx < totalPhotos) leftPhotos.push(photos[photoIdx++]);
       }
 
-      const getPhotosForType = (type) => {
-        if (type === "hero") {
-          const item = photos[photoIdx++];
-          return item ? [item] : [];
+      // Determine right page photos
+      if (photoIdx < totalPhotos) {
+        if (pairing.right === "hero_bleed" || pairing.right === "editorial_story" || pairing.right === "quote_portrait") {
+          rightPhotos.push(photos[photoIdx++]);
+        } else if (pairing.right === "dual_stacked") {
+          rightPhotos.push(photos[photoIdx++]);
+          if (photoIdx < totalPhotos) rightPhotos.push(photos[photoIdx++]);
+        } else if (pairing.right === "passepartout_minimal") {
+          rightPhotos.push(photos[photoIdx++]);
+        } else {
+          rightPhotos.push(photos[photoIdx++]);
         }
-        if (type === "dual" || type === "asymmetric" || type === "asymmetric-inv" || type === "polaroids") {
-          const p1 = photos[photoIdx++];
-          const p2 = photos[photoIdx++];
-          return [p1, p2].filter(Boolean);
-        }
-        if (type === "trio") {
-          const p1 = photos[photoIdx++];
-          const p2 = photos[photoIdx++];
-          const p3 = photos[photoIdx++];
-          return [p1, p2, p3].filter(Boolean);
-        }
-        if (type === "quad") {
-          const p1 = photos[photoIdx++];
-          const p2 = photos[photoIdx++];
-          const p3 = photos[photoIdx++];
-          const p4 = photos[photoIdx++];
-          return [p1, p2, p3, p4].filter(Boolean);
-        }
-        const item = photos[photoIdx++];
-        return item ? [item] : [];
-      };
+      }
 
-      const frontType = chosenLayout;
-      const frontPhotos = getPhotosForType(frontType);
-
-      let backType = layoutTypes[(layoutCounter + 1) % layoutTypes.length];
-      if (backType === "panorama") backType = "dual";
-      const backPhotos = getPhotosForType(backType);
-
-      rawLeaves.push({
-        front: {
-          type: frontType,
-          photos: frontPhotos,
+      list.push({
+        id: `spread_${spreadCount}`,
+        type: "content_spread",
+        title: `Pages ${pageNum} & ${pageNum + 1}`,
+        leftPage: {
+          type: pairing.left,
+          photos: leftPhotos,
           pageNumber: pageNum++
         },
-        back: {
-          type: backType,
-          photos: backPhotos,
+        rightPage: rightPhotos.length > 0 ? {
+          type: pairing.right,
+          photos: rightPhotos,
+          pageNumber: pageNum++
+        } : {
+          type: "minimal_plate",
           pageNumber: pageNum++
         }
       });
 
-      const repImg = frontPhotos[0]?.url || backPhotos[0]?.url || gallery?.coverImage;
-      spreads.push({
-        title: `Spread ${spreads.length} • Pages ${pageNum - 2} & ${pageNum - 1}`,
-        previewImg: getImageUrl(repImg)
-      });
+      spreadCount++;
     }
 
-    if (rawLeaves.length === 0) {
-      rawLeaves.push({
-        front: {
-          type: "hero",
-          photos: [
-            {
-              url: gallery?.coverImage || gallery?.banner,
-              title: gallery?.title || "Editorial Cover"
-            }
-          ],
-          pageNumber: 1
-        },
-        back: {
-          type: "dual",
-          photos: [
-            { url: gallery?.coverImage, title: "Plate I" },
-            { url: gallery?.banner, title: "Plate II" }
-          ],
-          pageNumber: 2
-        }
-      });
-      spreads.push({
-        title: "Spread 1 • Featured Collection",
-        previewImg: getImageUrl(gallery?.coverImage)
-      });
-    }
-
-    spreads.push({
-      title: "Back Cover • End of Collection",
-      previewImg: getImageUrl(gallery?.coverImage || photos[0]?.url)
+    // Final Spread: Epilogue & Back Cover
+    list.push({
+      id: "epilogue",
+      type: "epilogue_spread",
+      title: "Colophon & Back Cover",
+      leftPage: {
+        type: "colophon",
+        pageNumber: pageNum++,
+        galleryTitle: gallery?.title || "Photo Gallery",
+        photoCount: totalPhotos,
+        photographer: gallery?.author?.name || "Featured Artist",
+        curator: "CMS Portal Photobook Studio"
+      },
+      rightPage: {
+        type: "back_cover",
+        galleryTitle: gallery?.title || "Photo Gallery",
+        coverImage: getMediaUrl(gallery?.coverImage || photos[0]?.url)
+      }
     });
 
-    return { leaves: rawLeaves, spreadsInfo: spreads };
-  }, [photos, gallery]);
+    return list;
+  }, [gallery, photos]);
 
-  const totalLeaves = leaves.length + 1; // Leaf 0 (Cover) + Content Leaves
+  const totalSpreads = spreads.length;
+  const currentSpread = spreads[currentSpreadIndex] || spreads[0];
 
-  /**
-   * FLIP ENGINE: Direct hardware-accelerated DOM mutation (matches book.js exactly for 60 FPS)
-   */
-  const flipToSpread = useCallback(
-    (targetIndex) => {
-      const nextIndex = Math.max(0, Math.min(totalLeaves, targetIndex));
-      if (nextIndex === currentSpreadRef.current) return;
+  // Navigation handlers
+  const goToNextSpread = useCallback(() => {
+    if (isFlipping) return;
+    if (currentSpreadIndex < totalSpreads - 1) {
+      playPageTurnSound();
+      setIsFlipping("next");
+      setTimeout(() => {
+        setCurrentSpreadIndex((prev) => prev + 1);
+        setIsFlipping(null);
+      }, 320);
+    }
+  }, [currentSpreadIndex, totalSpreads, isFlipping, playPageTurnSound]);
 
-      const leafElements = bookContainerRef.current?.querySelectorAll(".book-leaf");
-      if (!leafElements || leafElements.length === 0) return;
+  const goToPrevSpread = useCallback(() => {
+    if (isFlipping) return;
+    if (currentSpreadIndex > 0) {
+      playPageTurnSound();
+      setIsFlipping("prev");
+      setTimeout(() => {
+        setCurrentSpreadIndex((prev) => prev - 1);
+        setIsFlipping(null);
+      }, 320);
+    }
+  }, [currentSpreadIndex, isFlipping, playPageTurnSound]);
 
-      const isMovingForward = nextIndex > currentSpreadRef.current;
-      const prevIndex = currentSpreadRef.current;
-
-      currentSpreadRef.current = nextIndex;
-      setCurrentSpread(nextIndex); // Update react state for UI dots and progress
-
-      playPageFlipSound();
-
-      leafElements.forEach((leaf, i) => {
-        const isFlipped = i < nextIndex;
-
-        // Calculate realistic z-indices
-        let zIndex = isFlipped ? i + 1 : totalLeaves - i + 1;
-
-        // Elevate the moving leaf during transition so it renders above static stacks
-        const isMoving = isMovingForward
-          ? i >= prevIndex && i < nextIndex
-          : i >= nextIndex && i < prevIndex;
-
-        if (isMoving) {
-          zIndex = 60 + Math.abs(i - nextIndex);
-        }
-
-        leaf.style.zIndex = zIndex;
-
-        // Stagger flipping for multi-page jumps
-        const delay = isMoving
-          ? isMovingForward
-            ? (i - prevIndex) * 90
-            : (prevIndex - 1 - i) * 90
-          : 0;
-
-        leaf.style.transitionDelay = `${delay}ms`;
-
-        if (isFlipped) {
-          leaf.classList.add("flipped");
-        } else {
-          leaf.classList.remove("flipped");
-        }
-      });
-
-      // Reset z-indices cleanly after flip completes
-      if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
-      flipTimerRef.current = setTimeout(() => {
-        leafElements.forEach((leaf, i) => {
-          const isFlipped = i < nextIndex;
-          leaf.style.zIndex = isFlipped ? i + 1 : totalLeaves - i + 1;
-          leaf.style.transitionDelay = "0ms";
-        });
-      }, 1200);
+  const jumpToSpread = useCallback(
+    (index) => {
+      if (index === currentSpreadIndex || isFlipping) return;
+      playPageTurnSound();
+      setIsFlipping(index > currentSpreadIndex ? "next" : "prev");
+      setTimeout(() => {
+        setCurrentSpreadIndex(index);
+        setIsFlipping(null);
+      }, 280);
     },
-    [totalLeaves, playPageFlipSound]
+    [currentSpreadIndex, isFlipping, playPageTurnSound]
   );
 
-  const nextSpread = useCallback(() => {
-    if (currentSpreadRef.current < totalLeaves) {
-      flipToSpread(currentSpreadRef.current + 1);
-    }
-  }, [totalLeaves, flipToSpread]);
-
-  const prevSpread = useCallback(() => {
-    if (currentSpreadRef.current > 0) {
-      flipToSpread(currentSpreadRef.current - 1);
-    }
-  }, [flipToSpread]);
-
-  // Initial leaf z-index setup on mount
+  // Autoplay Slideshow Timer
   useEffect(() => {
-    const leafElements = bookContainerRef.current?.querySelectorAll(".book-leaf");
-    if (leafElements) {
-      leafElements.forEach((leaf, i) => {
-        const isFlipped = i < currentSpreadRef.current;
-        leaf.style.zIndex = isFlipped ? i + 1 : totalLeaves - i + 1;
-        leaf.style.transitionDelay = "0ms";
-      });
+    if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
+    if (autoPlay) {
+      autoPlayTimerRef.current = setInterval(() => {
+        setCurrentSpreadIndex((prev) => {
+          if (prev < totalSpreads - 1) {
+            playPageTurnSound();
+            return prev + 1;
+          } else {
+            setAutoPlay(false);
+            return prev;
+          }
+        });
+      }, 5000);
     }
-  }, [totalLeaves]);
+    return () => {
+      if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
+    };
+  }, [autoPlay, totalSpreads, playPageTurnSound]);
 
-  // Keyboard navigation & Escape to close
+  // Keyboard navigation & ESC handler
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "ArrowRight") nextSpread();
-      if (e.key === "ArrowLeft") prevSpread();
+      if (e.key === "ArrowRight") goToNextSpread();
+      if (e.key === "ArrowLeft") goToPrevSpread();
+      if (e.key === " " && !lightboxPhoto) {
+        e.preventDefault();
+        setAutoPlay((prev) => !prev);
+      }
       if (e.key === "Escape") {
-        if (lightboxData) {
-          setLightboxData(null);
-        } else if (drawerOpen) {
-          setDrawerOpen(false);
+        if (lightboxPhoto) {
+          setLightboxPhoto(null);
+        } else if (filmstripOpen) {
+          setFilmstripOpen(false);
         } else {
           onClose?.();
         }
@@ -376,611 +396,678 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextSpread, prevSpread, lightboxData, drawerOpen, onClose]);
+  }, [goToNextSpread, goToPrevSpread, lightboxPhoto, filmstripOpen, onClose]);
 
-  // Autoplay loop
-  useEffect(() => {
-    if (autoPlay) {
-      autoPlayTimerRef.current = setInterval(() => {
-        if (currentSpreadRef.current >= totalLeaves) {
-          flipToSpread(0);
-        } else {
-          flipToSpread(currentSpreadRef.current + 1);
-        }
-      }, 4200);
-    } else {
-      if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
-    }
-    return () => {
-      if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
-    };
-  }, [autoPlay, totalLeaves, flipToSpread]);
-
-  // Fullscreen Toggle
+  // Fullscreen toggle
   const toggleFullscreen = () => {
-    if (!isFullscreen) {
-      if (containerRef.current?.requestFullscreen) {
-        containerRef.current.requestFullscreen().catch(() => {});
-      }
+    if (!document.fullscreenElement) {
+      modalContainerRef.current?.requestFullscreen?.().catch(() => {});
       setIsFullscreen(true);
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-      }
+      document.exitFullscreen?.().catch(() => {});
       setIsFullscreen(false);
     }
   };
 
-  useEffect(() => {
-    const onFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
-  }, []);
+  /**
+   * Render individual page types cleanly
+   */
+  const renderPage = (pageData, side = "left") => {
+    if (!pageData) return null;
 
-  const openZoom = (photo) => {
-    if (!photo || !photo.url) return;
-    setLightboxData({
-      url: getImageUrl(photo.url),
-      title: photo.title || gallery?.title || "Archival Photograph",
-      caption: photo.caption || "Curated photographic plate • High resolution archival print."
-    });
-  };
-
-  // Renderer for page contents
-  const renderPageLayout = (layoutData) => {
-    if (!layoutData) return null;
-    const { type, photos: pagePhotos, photo, pageNumber } = layoutData;
-
-    if (type === "panorama-left") {
+    // 1. Cover Inside Front Plate (Colophon / Intro)
+    if (pageData.type === "inside_front_cover") {
       return (
-        <div
-          className="page-spread-half page-spread-left"
-          onClick={() => openZoom(photo)}
-          title="Click to zoom panorama"
-        >
-          <img src={getImageUrl(photo?.url)} alt={photo?.title || "Panorama"} loading="lazy" />
-          <div className="page-number" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
-            {pageNumber}
+        <div className="artisan-page-content inside-cover-plate">
+          <div className="plate-watermark">ARCHIVAL EDITION</div>
+          <div className="plate-header">
+            <span className="plate-badge">EDITORIAL COLLECTION</span>
+            <h2 className="plate-title">{pageData.galleryTitle}</h2>
+            <div className="plate-divider" />
           </div>
-        </div>
-      );
-    }
 
-    if (type === "panorama-right") {
-      return (
-        <div
-          className="page-spread-half page-spread-right"
-          onClick={() => openZoom(photo)}
-          title="Click to zoom panorama"
-        >
-          <img src={getImageUrl(photo?.url)} alt={photo?.title || "Panorama"} loading="lazy" />
-          <div className="page-number" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
-            {pageNumber}
-          </div>
-        </div>
-      );
-    }
+          <div
+            className="plate-description"
+            dangerouslySetInnerHTML={{
+              __html: typeof pageData.description === "string" && pageData.description.trim().length > 0
+                ? pageData.description
+                : `<p>A curated photographic collection featuring ${pageData.photoCount} visual works. Bound and presented in high fidelity.</p>`
+            }}
+          />
 
-    if (type === "hero" || !pagePhotos || pagePhotos.length <= 1) {
-      const p = (pagePhotos && pagePhotos[0]) || { url: gallery?.coverImage };
-      return (
-        <div className="page-content">
-          <div className="layout-single-hero">
-            <div className="photo-frame" onClick={() => openZoom(p)} title="Click to zoom">
-              <img src={getImageUrl(p?.url)} alt={p?.title || "Photo Plate"} loading="lazy" />
+          <div className="plate-meta-grid">
+            <div className="plate-meta-item">
+              <span className="meta-label">Total Photographs</span>
+              <span className="meta-value">{pageData.photoCount} Fine Art Plates</span>
+            </div>
+            <div className="plate-meta-item">
+              <span className="meta-label">Curator</span>
+              <span className="meta-value">{pageData.photographer}</span>
+            </div>
+            <div className="plate-meta-item">
+              <span className="meta-label">Date Published</span>
+              <span className="meta-value">{pageData.date}</span>
+            </div>
+            <div className="plate-meta-item">
+              <span className="meta-label">Binding Style</span>
+              <span className="meta-value">Hardcover Archival</span>
             </div>
           </div>
-          <div className="page-number">{pageNumber}</div>
-        </div>
-      );
-    }
 
-    if (type === "dual" || type === "scrapbook" || type === "zigzag") {
-      return (
-        <div className="page-content">
-          <div className="layout-dual-equal">
-            {pagePhotos.slice(0, 2).map((p, idx) => (
-              <div key={idx} className="photo-frame" onClick={() => openZoom(p)} title="Click to zoom">
-                <img src={getImageUrl(p?.url)} alt={p?.title || "Plate"} loading="lazy" />
-              </div>
-            ))}
-          </div>
-          <div className="page-number">{pageNumber}</div>
-        </div>
-      );
-    }
-
-    if (type === "asymmetric") {
-      return (
-        <div className="page-content">
-          <div className="layout-asymmetric-duo">
-            {pagePhotos.slice(0, 2).map((p, idx) => (
-              <div key={idx} className="photo-frame" onClick={() => openZoom(p)} title="Click to zoom">
-                <img src={getImageUrl(p?.url)} alt={p?.title || "Plate"} loading="lazy" />
-              </div>
-            ))}
-          </div>
-          <div className="page-number">{pageNumber}</div>
-        </div>
-      );
-    }
-
-    if (type === "asymmetric-inv") {
-      return (
-        <div className="page-content">
-          <div className="layout-asymmetric-duo-inverted">
-            {pagePhotos.slice(0, 2).map((p, idx) => (
-              <div key={idx} className="photo-frame" onClick={() => openZoom(p)} title="Click to zoom">
-                <img src={getImageUrl(p?.url)} alt={p?.title || "Plate"} loading="lazy" />
-              </div>
-            ))}
-          </div>
-          <div className="page-number">{pageNumber}</div>
-        </div>
-      );
-    }
-
-    if (type === "trio") {
-      const lead = pagePhotos[0];
-      const stack = pagePhotos.slice(1, 3);
-      return (
-        <div className="page-content">
-          <div className="layout-trio">
-            <div className="lead-col">
-              <div className="photo-frame" style={{ height: "100%" }} onClick={() => openZoom(lead)}>
-                <img src={getImageUrl(lead?.url)} alt={lead?.title || "Plate"} loading="lazy" />
-              </div>
+          <div className="plate-footer">
+            <div className="plate-stamp">
+              <Sparkles size={14} /> CERTIFIED EXHIBITION
             </div>
-            <div className="stack-col">
-              {stack.map((p, idx) => (
-                <div key={idx} className="photo-frame" onClick={() => openZoom(p)}>
-                  <img src={getImageUrl(p?.url)} alt={p?.title || "Plate"} loading="lazy" />
-                </div>
-              ))}
+            <span className="plate-turn-hint">Turn right to open album →</span>
+          </div>
+        </div>
+      );
+    }
+
+    // 2. Cover Front Title Showcase
+    if (pageData.type === "cover_showcase") {
+      return (
+        <div className="artisan-page-content cover-showcase-plate">
+          <div className="cover-frame-box">
+            <div className="cover-gold-border" />
+            <div className="cover-image-container">
+              <img
+                src={pageData.coverImage}
+                alt={pageData.galleryTitle}
+                className="cover-hero-img"
+              />
+              <div className="cover-img-glare" />
             </div>
           </div>
-          <div className="page-number">{pageNumber}</div>
+          <div className="cover-typography">
+            <span className="cover-series-tag">PORTFOLIO EDITION</span>
+            <h1 className="cover-main-title">{pageData.galleryTitle}</h1>
+            <p className="cover-subtitle">{pageData.subtitle}</p>
+            <button
+              className="cover-open-btn"
+              onClick={goToNextSpread}
+            >
+              <span>Explore Photobook</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       );
     }
 
-    if (type === "polaroids") {
+    // 3. Hero Framed Photo (Museum Passe-partout style)
+    if (pageData.type === "hero_framed" || pageData.type === "passepartout_minimal") {
+      const p = pageData.photos?.[0];
       return (
-        <div className="page-content">
-          <div className="layout-polaroids">
-            {pagePhotos.slice(0, 2).map((p, idx) => (
+        <div className="artisan-page-content framed-photo-plate">
+          <div className="photo-matte-frame">
+            {p && (
               <div
-                key={idx}
-                className={`polaroid-card polaroid-${idx + 1}`}
-                onClick={() => openZoom(p)}
-                title="Click to zoom"
+                className="framed-image-wrapper"
+                onClick={() => setLightboxPhoto(p)}
+                title="Click to view in high resolution"
               >
-                <div className="polaroid-img">
-                  <img src={getImageUrl(p?.url)} alt={p?.title || "Polaroid"} loading="lazy" />
-                </div>
-                <div className="polaroid-caption">{p?.title || `Plate ${idx + 1}`}</div>
+                <img
+                  src={getMediaUrl(p.url)}
+                  alt={p.title || "Gallery Photo"}
+                  className="matte-img"
+                  loading="lazy"
+                />
+                <button className="photo-zoom-icon" aria-label="Zoom photo">
+                  <ZoomIn size={14} />
+                </button>
               </div>
-            ))}
+            )}
+            <div className="matte-caption">
+              <span className="matte-title">{p?.title || gallery?.title || "Exhibition Print"}</span>
+              {p?.caption && <span className="matte-desc">{p.caption}</span>}
+            </div>
           </div>
-          <div className="page-number">{pageNumber}</div>
+          <div className={`page-number-tag ${side}`}>
+            {pageData.pageNumber}
+          </div>
         </div>
       );
     }
 
-    if (type === "quad") {
+    // 4. Hero Bleed (Full Page Immersion)
+    if (pageData.type === "hero_bleed") {
+      const p = pageData.photos?.[0];
       return (
-        <div className="page-content">
-          <div className="layout-quad">
-            {pagePhotos.slice(0, 4).map((p, idx) => (
-              <div key={idx} className="photo-frame" onClick={() => openZoom(p)} title="Click to zoom">
-                <img src={getImageUrl(p?.url)} alt={p?.title || "Quad"} loading="lazy" />
+        <div className="artisan-page-content hero-bleed-plate">
+          {p && (
+            <div
+              className="bleed-image-wrapper"
+              onClick={() => setLightboxPhoto(p)}
+            >
+              <img
+                src={getMediaUrl(p.url)}
+                alt={p.title || "Gallery Photo"}
+                className="bleed-img"
+                loading="lazy"
+              />
+              <div className="bleed-gradient-overlay" />
+              <div className="bleed-caption-box">
+                <span className="bleed-badge">MASTER PRINT</span>
+                <h3 className="bleed-photo-title">{p.title || "Featured Frame"}</h3>
+                {p.caption && <p className="bleed-photo-desc">{p.caption}</p>}
               </div>
-            ))}
+              <button className="photo-zoom-icon" aria-label="Zoom photo">
+                <ZoomIn size={14} />
+              </button>
+            </div>
+          )}
+          <div className={`page-number-tag light-tag ${side}`}>
+            {pageData.pageNumber}
           </div>
-          <div className="page-number">{pageNumber}</div>
         </div>
       );
     }
 
-    return (
-      <div className="page-content">
-        <div className="layout-single-hero">
-          <div className="photo-frame" onClick={() => openZoom(pagePhotos[0])}>
-            <img src={getImageUrl(pagePhotos[0]?.url)} alt="Plate" loading="lazy" />
+    // 5. Dual Stacked Photos
+    if (pageData.type === "dual_stacked") {
+      const [p1, p2] = pageData.photos || [];
+      return (
+        <div className="artisan-page-content dual-stacked-plate">
+          {p1 && (
+            <div
+              className="dual-item-box"
+              onClick={() => setLightboxPhoto(p1)}
+            >
+              <div className="dual-img-crop">
+                <img src={getMediaUrl(p1.url)} alt={p1.title || "Photo"} loading="lazy" />
+                <button className="photo-zoom-icon"><ZoomIn size={12} /></button>
+              </div>
+              {p1.title && <span className="dual-item-title">{p1.title}</span>}
+            </div>
+          )}
+          {p2 && (
+            <div
+              className="dual-item-box"
+              onClick={() => setLightboxPhoto(p2)}
+            >
+              <div className="dual-img-crop">
+                <img src={getMediaUrl(p2.url)} alt={p2.title || "Photo"} loading="lazy" />
+                <button className="photo-zoom-icon"><ZoomIn size={12} /></button>
+              </div>
+              {p2.title && <span className="dual-item-title">{p2.title}</span>}
+            </div>
+          )}
+          <div className={`page-number-tag ${side}`}>
+            {pageData.pageNumber}
           </div>
         </div>
-        <div className="page-number">{pageNumber}</div>
+      );
+    }
+
+    // 6. Vintage Polaroid Keepsake Duo
+    if (pageData.type === "polaroid_duo") {
+      const [p1, p2] = pageData.photos || [];
+      return (
+        <div className="artisan-page-content polaroids-plate">
+          {p1 && (
+            <div
+              className="polaroid-card polaroid-left"
+              onClick={() => setLightboxPhoto(p1)}
+            >
+              <div className="polaroid-tape" />
+              <div className="polaroid-frame">
+                <img src={getMediaUrl(p1.url)} alt={p1.title || "Polaroid"} loading="lazy" />
+              </div>
+              <span className="polaroid-caption">{p1.title || "Capture • 01"}</span>
+            </div>
+          )}
+          {p2 && (
+            <div
+              className="polaroid-card polaroid-right"
+              onClick={() => setLightboxPhoto(p2)}
+            >
+              <div className="polaroid-tape" />
+              <div className="polaroid-frame">
+                <img src={getMediaUrl(p2.url)} alt={p2.title || "Polaroid"} loading="lazy" />
+              </div>
+              <span className="polaroid-caption">{p2.title || "Capture • 02"}</span>
+            </div>
+          )}
+          <div className={`page-number-tag ${side}`}>
+            {pageData.pageNumber}
+          </div>
+        </div>
+      );
+    }
+
+    // 7. Editorial Story / Portrait with Quote
+    if (pageData.type === "editorial_story" || pageData.type === "quote_portrait") {
+      const p = pageData.photos?.[0];
+      return (
+        <div className="artisan-page-content editorial-plate">
+          {p && (
+            <div
+              className="editorial-photo-box"
+              onClick={() => setLightboxPhoto(p)}
+            >
+              <img src={getMediaUrl(p.url)} alt={p.title || "Photo"} loading="lazy" />
+              <button className="photo-zoom-icon"><ZoomIn size={14} /></button>
+            </div>
+          )}
+          <div className="editorial-text-box">
+            <blockquote className="editorial-quote">
+              "{p?.caption || p?.title || "Photography is the story I fail to put into words."}"
+            </blockquote>
+            <div className="editorial-byline">
+              <span className="byline-name">{gallery?.author?.name || "The Artist"}</span>
+              <span className="byline-role">Visual Chronicle</span>
+            </div>
+          </div>
+          <div className={`page-number-tag ${side}`}>
+            {pageData.pageNumber}
+          </div>
+        </div>
+      );
+    }
+
+    // 8. Triptych Mosaic
+    if (pageData.type === "triptych_mosaic") {
+      const [p1, p2, p3] = pageData.photos || [];
+      return (
+        <div className="artisan-page-content triptych-plate">
+          <div className="triptych-grid">
+            {p1 && (
+              <div className="trip-cell cell-tall" onClick={() => setLightboxPhoto(p1)}>
+                <img src={getMediaUrl(p1.url)} alt={p1.title || "Photo"} loading="lazy" />
+                <button className="photo-zoom-icon"><ZoomIn size={12} /></button>
+              </div>
+            )}
+            <div className="trip-column">
+              {p2 && (
+                <div className="trip-cell cell-stacked" onClick={() => setLightboxPhoto(p2)}>
+                  <img src={getMediaUrl(p2.url)} alt={p2.title || "Photo"} loading="lazy" />
+                  <button className="photo-zoom-icon"><ZoomIn size={12} /></button>
+                </div>
+              )}
+              {p3 && (
+                <div className="trip-cell cell-stacked" onClick={() => setLightboxPhoto(p3)}>
+                  <img src={getMediaUrl(p3.url)} alt={p3.title || "Photo"} loading="lazy" />
+                  <button className="photo-zoom-icon"><ZoomIn size={12} /></button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className={`page-number-tag ${side}`}>
+            {pageData.pageNumber}
+          </div>
+        </div>
+      );
+    }
+
+    // 9. Colophon / Epilogue Plate
+    if (pageData.type === "colophon") {
+      return (
+        <div className="artisan-page-content colophon-plate">
+          <div className="colophon-seal">
+            <BookOpen size={28} />
+          </div>
+          <h2 className="colophon-title">End of Album</h2>
+          <p className="colophon-subtitle">{pageData.galleryTitle}</p>
+          <div className="colophon-divider" />
+
+          <div className="colophon-details">
+            <p>
+              This collection has presented <strong>{pageData.photoCount} fine-art photographs</strong> curated
+              for immersive high-definition viewing.
+            </p>
+            <p>
+              Curated by <strong>{pageData.photographer}</strong> • Published by {pageData.curator}.
+            </p>
+          </div>
+
+          <div className="colophon-actions">
+            <button
+              className="colophon-btn replay-btn"
+              onClick={() => jumpToSpread(0)}
+            >
+              <RotateCcw size={15} /> Replay Album
+            </button>
+            <button
+              className="colophon-btn exit-btn"
+              onClick={onClose}
+            >
+              Return to Gallery
+            </button>
+          </div>
+
+          <div className={`page-number-tag ${side}`}>
+            {pageData.pageNumber}
+          </div>
+        </div>
+      );
+    }
+
+    // 10. Back Cover Plate
+    if (pageData.type === "back_cover") {
+      return (
+        <div className="artisan-page-content back-cover-plate">
+          <div className="back-cover-emboss">
+            <div className="back-cover-logo">
+              <Sparkles size={32} />
+            </div>
+            <h3 className="back-cover-title">{pageData.galleryTitle}</h3>
+            <span className="back-cover-edition">LIMITED ARCHIVAL PORTFOLIO</span>
+            <div className="back-cover-barcode">
+              <div className="barcode-lines" />
+              <span className="barcode-num">CMS-PHOTO-ALBUM-2026</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Default Fallback
+    return (
+      <div className="artisan-page-content minimal-plate">
+        <div className={`page-number-tag ${side}`}>
+          {pageData.pageNumber || ""}
+        </div>
       </div>
     );
   };
 
-  const progressPct = totalLeaves > 0 ? (currentSpread / totalLeaves) * 100 : 0;
-  const currentSpreadName = spreadsInfo[currentSpread]?.title || `Spread ${currentSpread}`;
-
   return (
-    <div className="book-popup-backdrop" ref={containerRef}>
-      <div className="book-popup-container">
-        {/* ================= HEADER NAVIGATION ================= */}
-        <header className="book-header">
-          <button
-            type="button"
-            className="book-brand"
-            onClick={() => flipToSpread(0)}
-            title="Return to Cover"
+    <div
+      className="artisan-book-modal-backdrop"
+      ref={modalContainerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Interactive Photobook Modal"
+    >
+      {/* Ambient background lighting glow */}
+      <div className="artisan-ambient-glow" />
+
+      {/* TOP HEADER CONTROLS */}
+      <header className="artisan-book-topbar">
+        {/* Left: Gallery Title & Progress */}
+        <div className="topbar-left">
+          <div className="topbar-book-icon">
+            <BookOpen size={20} />
+          </div>
+          <div className="topbar-info">
+            <h2 className="topbar-gallery-title" title={gallery?.title}>
+              {gallery?.title || "Photo Gallery Album"}
+            </h2>
+            <div className="topbar-meta-tags">
+              <span className="meta-pill">
+                Spread {currentSpreadIndex + 1} of {totalSpreads}
+              </span>
+              <span className="meta-pill photos-count">
+                {photos.length} Photographs
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Quick Progress Bar & Binding Switcher */}
+        <div className="topbar-center">
+          <div className="binding-toggle-group" title="Switch Book Binding Style">
+            <button
+              className={`binding-btn ${bindingType === "hardcover" ? "active" : ""}`}
+              onClick={() => setBindingType("hardcover")}
+            >
+              Hardcover
+            </button>
+            <button
+              className={`binding-btn ${bindingType === "spiral" ? "active" : ""}`}
+              onClick={() => setBindingType("spiral")}
+            >
+              Spiral Wire
+            </button>
+          </div>
+
+          <div
+            className="spread-progress-bar-wrap"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct = (e.clientX - rect.left) / rect.width;
+              const target = Math.min(totalSpreads - 1, Math.max(0, Math.floor(pct * totalSpreads)));
+              jumpToSpread(target);
+            }}
+            title="Click along the timeline to jump to spread"
           >
-            <div className="book-brand-icon">
-              <BookOpen size={22} />
-            </div>
-            <div>
-              <span className="book-brand-title">{gallery?.title || "Photobook"}</span>
-              <span className="book-brand-subtitle">Interactive 3D Photobook Edition</span>
-            </div>
+            <div
+              className="spread-progress-bar-fill"
+              style={{ width: `${((currentSpreadIndex + 1) / totalSpreads) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Right: Controls & Exit Button */}
+        <div className="topbar-right">
+          {/* Autoplay Slideshow */}
+          <button
+            className={`tool-icon-btn ${autoPlay ? "active" : ""}`}
+            onClick={() => setAutoPlay((prev) => !prev)}
+            title={autoPlay ? "Pause Slideshow [Space]" : "Auto Play Slideshow [Space]"}
+          >
+            {autoPlay ? <Pause size={18} /> : <Play size={18} />}
           </button>
 
-          <div className="book-header-actions">
-            {/* Filmstrip Drawer Toggle */}
-            <button
-              type="button"
-              className="book-btn"
-              onClick={() => setDrawerOpen(true)}
-              title="View all spreads in a visual filmstrip"
-            >
-              <Layers size={16} />
-              <span>All Spreads</span>
-            </button>
-
-            {/* Sound Toggle */}
-            <button
-              type="button"
-              className={`book-btn ${soundEnabled ? "active" : ""}`}
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              title="Toggle realistic paper flip sound"
-            >
-              {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-              <span>{soundEnabled ? "Audio On" : "Audio Off"}</span>
-            </button>
-
-            {/* Auto Play */}
-            <button
-              type="button"
-              className={`book-btn ${autoPlay ? "active" : ""}`}
-              onClick={() => setAutoPlay(!autoPlay)}
-              title="Auto-advance photobook pages"
-            >
-              {autoPlay ? <Pause size={15} /> : <Play size={15} />}
-              <span>{autoPlay ? "Pause" : "Auto Play"}</span>
-            </button>
-
-            {/* Fullscreen */}
-            <button
-              type="button"
-              className="book-btn"
-              onClick={toggleFullscreen}
-              title="Toggle Fullscreen"
-            >
-              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </button>
-
-            {/* Close Popup / Return to Standard View */}
-            <button
-              type="button"
-              className="book-btn btn-close"
-              onClick={onClose}
-              title="Close book and return to standard gallery page"
-            >
-              <X size={16} />
-              <span>Close Book</span>
-            </button>
-          </div>
-        </header>
-
-        {/* ================= INTRO TITLE SECTION ================= */}
-        <section className="book-gallery-intro">
-          <div className="book-tag-badge">
-            <span className="dot"></span>
-            <span>{gallery?.category?.name || "Art & Photography"} • Interactive Photobook</span>
-          </div>
-          <h1 className="book-main-title">{gallery?.title || "Fifty Frames from a Single Season"}</h1>
-          <p className="book-intro-desc">
-            {gallery?.shortDescription ||
-              "A tactile digital book exploring light, solitude, and vast horizons. Click the book margins, drag or use arrow keys to turn pages."}
-          </p>
-        </section>
-
-        {/* ================= 3D REALISTIC BOOK STAGE ================= */}
-        <main className="book-stage">
-          <div className="book-container" ref={bookContainerRef}>
-            {/* Hardcover Base, Drop Shadows & Spine */}
-            <div className="book-shadow" />
-            <div className="book-cover-base" />
-            <div className="stacked-pages-left" />
-            <div className="stacked-pages-right" />
-            <div className="spine-ridge" />
-
-            {/* Left & Right Hotspots */}
-            <div
-              className="flip-hotspot-left"
-              onClick={prevSpread}
-              title="Click to flip backward"
-            >
-              <div className="corner-curl-hint">❮</div>
-            </div>
-            <div
-              className="flip-hotspot-right"
-              onClick={nextSpread}
-              title="Click to flip forward"
-            >
-              <div className="corner-curl-hint">❯</div>
-            </div>
-
-            {/* ========================================================
-                 LEAF 0: HARDCOVER FRONT (OUTER) + TABLE OF CONTENTS (INNER)
-                 ======================================================== */}
-            <div className="book-leaf" id="leaf0">
-              {/* Front Face: Hardcover Front */}
-              <div className="page-face page-front cover-front">
-                <div className="cover-emboss-border" />
-                <div className="cover-badge">
-                  {gallery?.category?.name || "Lumen Journal"} • Vol. I
-                </div>
-                <h2 className="cover-headline">{gallery?.title || "Photobook Edition"}</h2>
-                <p className="cover-sub">
-                  {gallery?.shortDescription ||
-                    "Archival photography across seasons of light, quiet coastlines, and morning fog."}
-                </p>
-
-                <div style={{ marginTop: "28px", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "42px", height: "1px", background: "rgba(240, 190, 110, 0.7)" }} />
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      letterSpacing: "0.16em",
-                      textTransform: "uppercase",
-                      color: "#E8B975",
-                      fontWeight: 700
-                    }}
-                  >
-                    {photos.length} High-Res Frames
-                  </span>
-                </div>
-
-                <div className="cover-bottom">
-                  <span style={{ fontSize: "12px", color: "#D5CEE5" }}>
-                    Lumen Edition • {new Date().getFullYear()}
-                  </span>
-                  <button
-                    type="button"
-                    className="cover-open-btn"
-                    onClick={() => flipToSpread(1)}
-                  >
-                    Open Book ➔
-                  </button>
-                </div>
-              </div>
-
-              {/* Back Face: Table of Contents / Index */}
-              <div className="page-face page-back toc-page">
-                <div className="page-toc">
-                  <span className="toc-kicker">Curatorial Index</span>
-                  <h3 className="toc-title">{gallery?.title || "Exhibition Index"}</h3>
-                  <p className="toc-intro">
-                    Collection of {photos.length} archival photographic plates arranged across dynamic editorial layouts.
-                  </p>
-
-                  <div className="toc-list">
-                    {spreadsInfo.slice(1, spreadsInfo.length - 1).map((sp, idx) => (
-                      <div
-                        key={idx}
-                        className="toc-item"
-                        onClick={() => flipToSpread(idx + 1)}
-                      >
-                        <span className="toc-num">{String(idx + 1).padStart(2, "0")}</span>
-                        <span className="toc-label">
-                          {photos[idx]?.title || sp.title.replace(/^Spread \d+ • /, "")}
-                        </span>
-                        <span className="toc-page">Spread {idx + 1}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="page-number">ii</div>
-              </div>
-            </div>
-
-            {/* ========================================================
-                 LEAVES 1..N: DYNAMIC PHOTO SPREADS
-                 ======================================================== */}
-            {leaves.map((leaf, index) => (
-              <div key={index} className="book-leaf" id={`leaf${index + 1}`}>
-                {/* Front Face (Right page of spread) */}
-                <div className="page-face page-front">
-                  {renderPageLayout(leaf.front)}
-                </div>
-
-                {/* Back Face (Left page of next spread when flipped) */}
-                <div className="page-face page-back">
-                  {renderPageLayout(leaf.back)}
-                </div>
-              </div>
-            ))}
-
-            {/* ========================================================
-                 LAST LEAF: BACK COVER / ENDPLATE
-                 ======================================================== */}
-            <div className="book-leaf" id={`leaf${totalLeaves}`}>
-              <div className="page-face page-front cover-back">
-                <div className="cover-back-emblem">
-                  <Sparkles size={32} />
-                </div>
-                <h3
-                  style={{
-                    fontFamily: "'Bricolage Grotesque', sans-serif",
-                    fontSize: "24px",
-                    fontWeight: 800,
-                    marginBottom: "8px",
-                    color: "#fff"
-                  }}
-                >
-                  End of Collection
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#A3A8BA",
-                    maxWidth: "280px",
-                    lineHeight: "1.5",
-                    marginBottom: "24px"
-                  }}
-                >
-                  You have browsed all {photos.length} plates in &ldquo;{gallery?.title}&rdquo;.
-                </p>
-
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
-                  <button
-                    type="button"
-                    className="pill-action-btn"
-                    onClick={() => flipToSpread(0)}
-                  >
-                    <RotateCcw size={14} /> Front Cover
-                  </button>
-                  <button
-                    type="button"
-                    className="pill-action-btn"
-                    style={{ background: "var(--accent)", color: "#111", borderColor: "var(--accent)" }}
-                    onClick={onClose}
-                  >
-                    Close Book
-                  </button>
-                </div>
-              </div>
-
-              <div className="page-face page-back cover-back">
-                <span style={{ fontSize: "12px", color: "#64748b" }}>Back Cover Plate</span>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* ================= NAVIGATION BAR & PROGRESS ================= */}
-        <nav className="controls-bar">
-          <div className="spread-indicator">{currentSpreadName}</div>
-
-          <div className="progress-track">
-            <div className="progress-fill" style={{ width: `${progressPct}%` }} />
-          </div>
-
-          <div className="nav-buttons-cluster">
-            <button
-              type="button"
-              className="nav-btn"
-              onClick={prevSpread}
-              disabled={currentSpread === 0}
-              title="Turn backward (Left Arrow)"
-            >
-              <ChevronLeft size={24} />
-            </button>
-
-            <div className="dots-container">
-              {Array.from({ length: totalLeaves + 1 }).map((_, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`nav-dot ${idx === currentSpread ? "active" : ""}`}
-                  onClick={() => flipToSpread(idx)}
-                  title={`Go to Spread ${idx}`}
-                />
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="nav-btn"
-              onClick={nextSpread}
-              disabled={currentSpread >= totalLeaves}
-              title="Turn forward (Right Arrow)"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
-
-          <div className="quick-actions">
-            <span style={{ fontSize: "12px", color: "#8A8F9E" }}>
-              💡 Tips: Use <strong>Left / Right Arrow keys</strong>, click the book margins, or click any photo to zoom in!
-            </span>
-          </div>
-        </nav>
-
-        {/* ================= LIGHTBOX ZOOM MODAL ================= */}
-        {lightboxData && (
-          <div
-            className="lightbox-modal active"
-            onClick={() => setLightboxData(null)}
+          {/* Sound Toggle */}
+          <button
+            className={`tool-icon-btn ${soundEnabled ? "active" : ""}`}
+            onClick={() => setSoundEnabled((prev) => !prev)}
+            title={soundEnabled ? "Mute Page Flip Sound" : "Enable Page Flip Sound"}
           >
+            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
+
+          {/* Thumbnails Filmstrip Drawer */}
+          <button
+            className={`tool-icon-btn ${filmstripOpen ? "active" : ""}`}
+            onClick={() => setFilmstripOpen((prev) => !prev)}
+            title="Show All Spreads (Filmstrip)"
+          >
+            <Grid size={18} />
+          </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            className="tool-icon-btn"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
+
+          {/* Prominent Close Button */}
+          <button
+            className="book-close-prominent-btn"
+            onClick={onClose}
+            title="Exit Photobook [Esc]"
+          >
+            <span>Close</span>
+            <X size={18} />
+          </button>
+        </div>
+      </header>
+
+      {/* MAIN BOOK STAGE */}
+      <main className="artisan-book-stage">
+        {/* Floating Prev Button */}
+        <button
+          className={`book-nav-arrow arrow-left ${currentSpreadIndex === 0 ? "disabled" : ""}`}
+          onClick={goToPrevSpread}
+          disabled={currentSpreadIndex === 0}
+          aria-label="Previous Page"
+          title="Previous Page (Left Arrow)"
+        >
+          <ChevronLeft size={28} />
+        </button>
+
+        {/* Floating Next Button */}
+        <button
+          className={`book-nav-arrow arrow-right ${currentSpreadIndex === totalSpreads - 1 ? "disabled" : ""}`}
+          onClick={goToNextSpread}
+          disabled={currentSpreadIndex === totalSpreads - 1}
+          aria-label="Next Page"
+          title="Next Page (Right Arrow)"
+        >
+          <ChevronRight size={28} />
+        </button>
+
+        {/* 3D BOOK STRUCTURE */}
+        <div
+          className={`artisan-book-casing binding-${bindingType} mode-${viewMode} ${
+            isFlipping ? `flipping-${isFlipping}` : ""
+          }`}
+        >
+          {/* Stacked Paper Edges (Giving realistic depth to the book) */}
+          <div className="book-edge-stack left-stack" />
+          <div className="book-edge-stack right-stack" />
+
+          {/* Ribbon Bookmark */}
+          <div className="artisan-ribbon-bookmark">
+            <div className="ribbon-tail" />
+          </div>
+
+          {/* THE BOOK BODY */}
+          <div className="artisan-book-pages">
+            {/* LEFT PAGE */}
             <div
-              className="lightbox-content"
-              onClick={(e) => e.stopPropagation()}
+              className="artisan-page page-left"
+              onClick={() => {
+                if (currentSpreadIndex > 0) goToPrevSpread();
+              }}
             >
-              <button
-                type="button"
-                className="lightbox-close-btn"
-                onClick={() => setLightboxData(null)}
-                title="Close zoom preview"
-              >
-                <X size={20} />
-              </button>
-              <div className="lightbox-image-wrap">
-                <img src={lightboxData.url} alt={lightboxData.title} />
+              <div className="page-paper-surface">
+                {renderPage(currentSpread.leftPage, "left")}
               </div>
-              <div className="lightbox-caption-bar">
-                <div className="lightbox-info">
-                  <h3>{lightboxData.title}</h3>
-                  <p>{lightboxData.caption}</p>
-                </div>
+              <div className="page-gutter-shadow left-gutter" />
+              <div className="page-turn-hint-corner corner-left" title="Click to go back">
+                <ChevronLeft size={16} />
+              </div>
+            </div>
+
+            {/* CENTER BINDING */}
+            {bindingType === "spiral" ? (
+              <SpiralCoilBinding height={650} />
+            ) : (
+              <div className="artisan-center-spine" aria-hidden="true">
+                <div className="spine-deep-crease" />
+                <div className="spine-highlight-stitch" />
+              </div>
+            )}
+
+            {/* RIGHT PAGE */}
+            <div
+              className="artisan-page page-right"
+              onClick={() => {
+                if (currentSpreadIndex < totalSpreads - 1) goToNextSpread();
+              }}
+            >
+              <div className="page-paper-surface">
+                {renderPage(currentSpread.rightPage, "right")}
+              </div>
+              <div className="page-gutter-shadow right-gutter" />
+              <div className="page-turn-hint-corner corner-right" title="Click to go next">
+                <ChevronRight size={16} />
               </div>
             </div>
           </div>
-        )}
+        </div>
+      </main>
 
-        {/* ================= SPREADS FILMSTRIP DRAWER ================= */}
-        <div
-          className={`drawer-overlay ${drawerOpen ? "active" : ""}`}
-          onClick={() => setDrawerOpen(false)}
-        />
-        <aside className={`spreads-drawer ${drawerOpen ? "active" : ""}`}>
-          <div className="drawer-header">
-            <span className="drawer-title">Browse All Spreads (Filmstrip)</span>
-            <button
-              type="button"
-              className="pill-action-btn"
-              onClick={() => setDrawerOpen(false)}
-            >
-              ✕ Close
-            </button>
+      {/* BOTTOM FILMSTRIP TRAY (DRAWER) */}
+      <footer className={`artisan-filmstrip-tray ${filmstripOpen ? "open" : ""}`}>
+        <div className="filmstrip-header">
+          <div className="filmstrip-title-row">
+            <Grid size={15} />
+            <span>Spreads Overview ({totalSpreads} Spreads)</span>
           </div>
-          <div className="drawer-grid">
-            {spreadsInfo.map((sp, idx) => (
-              <div
-                key={idx}
-                className={`drawer-card ${idx === currentSpread ? "active" : ""}`}
-                onClick={() => {
-                  flipToSpread(idx);
-                  setDrawerOpen(false);
-                }}
+          <button
+            className="filmstrip-close-btn"
+            onClick={() => setFilmstripOpen(false)}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="filmstrip-scroll-row">
+          {spreads.map((spread, idx) => {
+            const isActive = idx === currentSpreadIndex;
+            const previewImg =
+              spread.leftPage?.photos?.[0]?.url ||
+              spread.rightPage?.photos?.[0]?.url ||
+              spread.rightPage?.coverImage ||
+              gallery?.coverImage;
+
+            return (
+              <button
+                key={spread.id}
+                className={`filmstrip-card ${isActive ? "active" : ""}`}
+                onClick={() => jumpToSpread(idx)}
               >
-                <div className="drawer-card-preview">
-                  <img src={sp.previewImg} alt={sp.title} />
+                <div className="filmstrip-thumbnail">
+                  <img
+                    src={getMediaUrl(previewImg)}
+                    alt={spread.title}
+                    loading="lazy"
+                  />
+                  <div className="filmstrip-badge">{idx === 0 ? "Cover" : `Spread ${idx}`}</div>
+                  {isActive && (
+                    <div className="filmstrip-active-check">
+                      <Check size={14} />
+                    </div>
+                  )}
                 </div>
-                <div className="drawer-card-title">{sp.title}</div>
-                <div className="drawer-card-sub">
-                  {idx === 0 ? "Cover" : idx === spreadsInfo.length - 1 ? "End" : `Spread ${idx}`}
-                </div>
+                <span className="filmstrip-label">{spread.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      </footer>
+
+      {/* QUICK FLOATING FILMSTRIP TRIGGER BUTTON (When closed) */}
+      {!filmstripOpen && (
+        <button
+          className="filmstrip-floating-pill"
+          onClick={() => setFilmstripOpen(true)}
+          title="Open thumbnails filmstrip"
+        >
+          <Grid size={15} />
+          <span>Page Navigator ({currentSpreadIndex + 1}/{totalSpreads})</span>
+        </button>
+      )}
+
+      {/* HIGH RESOLUTION LIGHTBOX MODAL */}
+      {lightboxPhoto && (
+        <div
+          className="artisan-lightbox-overlay"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <button
+            className="lightbox-close-btn"
+            onClick={() => setLightboxPhoto(null)}
+          >
+            <X size={22} />
+          </button>
+
+          <div
+            className="lightbox-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={getMediaUrl(lightboxPhoto.url)}
+              alt={lightboxPhoto.title || "Zoomed Photo"}
+              className="lightbox-img"
+            />
+            {(lightboxPhoto.title || lightboxPhoto.caption) && (
+              <div className="lightbox-caption">
+                {lightboxPhoto.title && <h3 className="lightbox-title">{lightboxPhoto.title}</h3>}
+                {lightboxPhoto.caption && <p className="lightbox-desc">{lightboxPhoto.caption}</p>}
               </div>
-            ))}
+            )}
           </div>
-        </aside>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
