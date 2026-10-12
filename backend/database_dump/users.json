@@ -1,0 +1,316 @@
+[
+  {
+    "_id": "6ac12ebb73c416c2ffd213ba",
+    "name": "MK",
+    "email": "admin@portal.com",
+    "password": "$2b$10$K10avWIGflS7VN2TScS9FO5wt91SJarkY9KNpXyzlkozUadh3y74m",
+    "role": "admin",
+    "status": "active",
+    "avatar": "http://localhost:5001/uploads/images/2026/10/WhatsApp-Image-2026-10-04-at-11-38-08-AM-1791094243891-670410778.jpeg",
+    "bio": "Administrator and Content Manager",
+    "permissions": {
+      "posts": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "pages": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "videos": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "galleries": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "media": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "menus": {
+        "view": true,
+        "edit": true
+      },
+      "theme": {
+        "view": true,
+        "edit": true
+      },
+      "users": {
+        "view": true,
+        "edit": true
+      },
+      "settings": {
+        "view": true,
+        "edit": true
+      }
+    },
+    "createdAt": "2026-10-03T16:35:07.766Z",
+    "updatedAt": "2026-10-05T12:58:12.308Z",
+    "__v": 0,
+    "statusReason": "",
+    "username": "admin"
+  },
+  {
+    "_id": "6ac13a03797026f08c67eb5a",
+    "name": "San",
+    "email": "san@portal.com",
+    "password": "$2b$10$nH1qA3HwmK5YXLTpuMdfOujXB/yXgNI8/clg6Fcwy9596cYh/I.1e",
+    "role": "editor",
+    "status": "active",
+    "avatar": "",
+    "bio": "",
+    "permissions": {
+      "posts": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "pages": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "videos": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "galleries": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "media": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "menus": {
+        "view": false,
+        "edit": false
+      },
+      "theme": {
+        "view": false,
+        "edit": false
+      },
+      "users": {
+        "view": false,
+        "edit": false
+      },
+      "settings": {
+        "view": false,
+        "edit": false
+      }
+    },
+    "createdAt": "2026-10-03T17:23:15.606Z",
+    "updatedAt": "2026-10-06T03:51:14.402Z",
+    "__v": 0,
+    "statusReason": "",
+    "username": "san_kumar"
+  },
+  {
+    "_id": "6ac13a03797026f08c67eb5b",
+    "name": "Test Subscriber",
+    "email": "subscriber@portal.com",
+    "password": "$2b$10$5/81kBwW2G4nUfUMaWa7uemBJFfxLiLZZb5drlmxS0ItrrBewYrYG",
+    "role": "user",
+    "status": "active",
+    "avatar": "",
+    "bio": "",
+    "permissions": {
+      "posts": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "pages": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "videos": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "galleries": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "media": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "menus": {
+        "view": false,
+        "edit": false
+      },
+      "theme": {
+        "view": false,
+        "edit": false
+      },
+      "users": {
+        "view": false,
+        "edit": false
+      },
+      "settings": {
+        "view": false,
+        "edit": false
+      }
+    },
+    "createdAt": "2026-10-03T17:23:15.685Z",
+    "updatedAt": "2026-10-03T17:23:15.685Z",
+    "__v": 0,
+    "username": "subscriber"
+  },
+  {
+    "_id": "6ac362a5370136f2c0446ae0",
+    "name": "Direct Admin User",
+    "email": "direct_admin_user@example.com",
+    "password": "$2b$10$kTAbS6B7bT4rdOUdpVKn9.ca.k1N6ta2ZvJhzxVV9cInwKZetwLam",
+    "role": "editor",
+    "status": "active",
+    "statusReason": "",
+    "avatar": "",
+    "bio": "",
+    "permissions": {
+      "posts": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "pages": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "videos": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "galleries": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "media": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "menus": {
+        "view": false,
+        "edit": false
+      },
+      "theme": {
+        "view": false,
+        "edit": false
+      },
+      "users": {
+        "view": false,
+        "edit": false
+      },
+      "settings": {
+        "view": false,
+        "edit": false
+      }
+    },
+    "createdAt": "2026-10-05T08:41:09.752Z",
+    "updatedAt": "2026-10-06T03:10:11.210Z",
+    "__v": 0,
+    "username": "direct_admin_user"
+  },
+  {
+    "_id": "6ac363b1370136f2c0446d38",
+    "name": "Joyca",
+    "email": "joyca@portal.com",
+    "password": "$2b$10$RoH64MhoZ9hCqVKK0HkTHePbiyXuOLLpM123xhIUJCdKuKzS8OD5S",
+    "role": "user",
+    "status": "pending",
+    "statusReason": "",
+    "avatar": "",
+    "bio": "",
+    "permissions": {
+      "posts": {
+        "view": true,
+        "create": true,
+        "edit": true,
+        "delete": true
+      },
+      "pages": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "videos": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "galleries": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "media": {
+        "view": false,
+        "create": false,
+        "edit": false,
+        "delete": false
+      },
+      "menus": {
+        "view": false,
+        "edit": false
+      },
+      "theme": {
+        "view": false,
+        "edit": false
+      },
+      "users": {
+        "view": false,
+        "edit": false
+      },
+      "settings": {
+        "view": false,
+        "edit": false
+      }
+    },
+    "createdAt": "2026-10-05T08:45:37.282Z",
+    "updatedAt": "2026-10-05T08:57:02.133Z",
+    "__v": 0,
+    "username": "joyca"
+  }
+]

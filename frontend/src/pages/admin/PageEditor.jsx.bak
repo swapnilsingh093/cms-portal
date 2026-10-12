@@ -1,0 +1,1455 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { pageAPI, mediaAPI, categoryAPI } from '../../services/api';
+import RichEditor from '../../components/RichEditor';
+import MediaPickerModal from '../../components/admin/MediaPickerModal';
+import {
+  ArrowLeft,
+  Save,
+  ExternalLink,
+  Image as ImageIcon,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Trash2,
+  Check,
+  Edit2,
+  Upload,
+  Film,
+  Images,
+  BookOpen,
+  Sparkles,
+  Sliders,
+  FolderTree
+} from 'lucide-react';
+
+const ACCEPT_IMAGES =
+  'image/jpeg,image/png,image/webp,image/svg+xml,image/gif,image/bmp,image/tiff,.jpg,.jpeg,.png,.webp,.svg,.gif,.bmp,.tiff,.tif';
+
+const PageEditor = () => {
+  const { id } = useParams();
+  const isEditing = Boolean(id);
+  const navigate = useNavigate();
+
+  // Core Page Fields
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
+  const [editingSlugMode, setEditingSlugMode] = useState(false);
+  const [tempSlug, setTempSlug] = useState('');
+
+  const [content, setContent] = useState('');
+  const [banner, setBanner] = useState('');
+  const [template, setTemplate] = useState('default');
+  const [status, setStatus] = useState('published');
+  const [order, setOrder] = useState(0);
+
+  // Home Template Configuration State
+  const [templateConfig, setTemplateConfig] = useState({
+    heroSlider: {
+      enabled: true,
+      mode: 'dynamic',
+      slideCount: 5,
+      height: '90vh',
+      titleFontSize: '3rem',
+      alignment: 'left'
+    },
+    videoSection: {
+      enabled: true,
+      title: 'Trending & Latest Videos',
+      subtitle: 'Stream recent videos and explore video categories',
+      category1Id: '',
+      category2Id: '',
+      category1CustomImage: '',
+      category2CustomImage: ''
+    },
+    gallerySection: {
+      enabled: true,
+      title: 'Featured Photo Galleries',
+      subtitle: 'High-resolution photo albums and visual collections',
+      category1Id: '',
+      category2Id: '',
+      category1CustomImage: '',
+      category2CustomImage: ''
+    },
+    postsSection: {
+      enabled: true,
+      title: 'Latest Stories & Articles',
+      subtitle: 'Read our newest articles and folklore tales',
+      count: 3
+    },
+    membershipSection: {
+      enabled: true,
+      heading: 'Unlock Unlimited Access to Exclusive Media',
+      subheading: 'Join Our Community',
+      content: 'Get unlimited access to high-definition video streams, full-resolution photo albums, and deep folklore stories. Support our independent creators and join our exclusive community today.',
+      buttonText: 'Join Today',
+      buttonUrl: '/page/about-us',
+      image: ''
+    }
+  });
+
+  // Categories list
+  const [allCategories, setAllCategories] = useState([]);
+
+  // Media Picker state & target
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState('banner');
+
+  // Statuses
+  const [loading, setLoading] = useState(isEditing);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  useEffect(() => {
+    // Fetch all categories for section selectors
+    const fetchCats = async () => {
+      try {
+        const res = await categoryAPI.getAll();
+        if (res.categories) setAllCategories(res.categories);
+      } catch (err) {
+        console.error('Error fetching categories in PageEditor:', err);
+      }
+    };
+    fetchCats();
+
+    if (isEditing) {
+      loadPage();
+    }
+  }, [id]);
+
+  const loadPage = async () => {
+    setLoading(true);
+    try {
+      const res = await pageAPI.getBySlug(id);
+      if (res.page) {
+        const p = res.page;
+        setTitle(p.title || '');
+        setSlug(p.slug || '');
+        setIsSlugManuallyEdited(true);
+        setContent(p.content || '');
+        setBanner(p.banner || '');
+        setTemplate(p.template || 'default');
+        setStatus(p.status || 'published');
+        setOrder(p.order || 0);
+
+        if (p.templateConfig) {
+          setTemplateConfig(prev => ({
+            heroSlider: { ...prev.heroSlider, ...(p.templateConfig.heroSlider || {}) },
+            videoSection: { ...prev.videoSection, ...(p.templateConfig.videoSection || {}) },
+            gallerySection: { ...prev.gallerySection, ...(p.templateConfig.gallerySection || {}) },
+            postsSection: { ...prev.postsSection, ...(p.templateConfig.postsSection || {}) },
+            membershipSection: { ...prev.membershipSection, ...(p.templateConfig.membershipSection || {}) }
+          }));
+        }
+      }
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.message || err.message || 'Error loading page'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTitleChange = (e) => {
+    const val = e.target.value;
+    setTitle(val);
+    if (!isSlugManuallyEdited && !isEditing) {
+      const generated = val
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
+      setSlug(generated);
+    }
+  };
+
+  const handleStartEditSlug = () => {
+    setTempSlug(slug);
+    setEditingSlugMode(true);
+  };
+
+  const handleSaveSlug = () => {
+    const clean = tempSlug
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+    setSlug(clean);
+    setIsSlugManuallyEdited(true);
+    setEditingSlugMode(false);
+  };
+
+  const openPickerFor = (target) => {
+    setMediaPickerTarget(target);
+    setMediaPickerOpen(true);
+  };
+
+  const handleMediaSelect = (mediaItem) => {
+    if (mediaPickerTarget === 'banner') {
+      setBanner(mediaItem.url);
+    } else if (mediaPickerTarget === 'membershipImage') {
+      setTemplateConfig(prev => ({
+        ...prev,
+        membershipSection: { ...prev.membershipSection, image: mediaItem.url }
+      }));
+    } else if (mediaPickerTarget === 'cat1VideoCustomImage') {
+      setTemplateConfig(prev => ({
+        ...prev,
+        videoSection: { ...prev.videoSection, category1CustomImage: mediaItem.url }
+      }));
+    } else if (mediaPickerTarget === 'cat2VideoCustomImage') {
+      setTemplateConfig(prev => ({
+        ...prev,
+        videoSection: { ...prev.videoSection, category2CustomImage: mediaItem.url }
+      }));
+    } else if (mediaPickerTarget === 'cat1GalleryCustomImage') {
+      setTemplateConfig(prev => ({
+        ...prev,
+        gallerySection: { ...prev.gallerySection, category1CustomImage: mediaItem.url }
+      }));
+    } else if (mediaPickerTarget === 'cat2GalleryCustomImage') {
+      setTemplateConfig(prev => ({
+        ...prev,
+        gallerySection: { ...prev.gallerySection, category2CustomImage: mediaItem.url }
+      }));
+    }
+  };
+
+  const handleLocalUploadFor = async (e, target) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setMessage({ type: '', text: '' });
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await mediaAPI.upload(formData);
+      if (res.media) {
+        if (target === 'banner') {
+          setBanner(res.media.url);
+        } else if (target === 'membershipImage') {
+          setTemplateConfig(prev => ({
+            ...prev,
+            membershipSection: { ...prev.membershipSection, image: res.media.url }
+          }));
+        } else if (target === 'cat1VideoCustomImage') {
+          setTemplateConfig(prev => ({
+            ...prev,
+            videoSection: { ...prev.videoSection, category1CustomImage: res.media.url }
+          }));
+        } else if (target === 'cat2VideoCustomImage') {
+          setTemplateConfig(prev => ({
+            ...prev,
+            videoSection: { ...prev.videoSection, category2CustomImage: res.media.url }
+          }));
+        } else if (target === 'cat1GalleryCustomImage') {
+          setTemplateConfig(prev => ({
+            ...prev,
+            gallerySection: { ...prev.gallerySection, category1CustomImage: res.media.url }
+          }));
+        } else if (target === 'cat2GalleryCustomImage') {
+          setTemplateConfig(prev => ({
+            ...prev,
+            gallerySection: { ...prev.gallerySection, category2CustomImage: res.media.url }
+          }));
+        }
+        setMessage({ type: 'success', text: `Image "${file.name}" uploaded and set successfully!` });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.message || err.message || 'Error uploading image' });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!title.trim()) {
+      setMessage({ type: 'error', text: 'Please enter a page title.' });
+      return;
+    }
+
+    setSaving(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const payload = {
+        title: title.trim(),
+        slug: slug.trim(),
+        content,
+        banner,
+        template,
+        status,
+        order: Number(order) || 0,
+        templateConfig
+      };
+
+      let res;
+      if (isEditing) {
+        res = await pageAPI.update(id, payload);
+        setMessage({ type: 'success', text: 'Page updated successfully!' });
+      } else {
+        res = await pageAPI.create(payload);
+        setMessage({ type: 'success', text: 'Page created successfully!' });
+        if (res.page?._id) {
+          navigate(`/admin/pages/edit/${res.page._id}`, { replace: true });
+        }
+      }
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.message || err.message || 'Error saving page'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Filtered categories
+  const videoCategories = allCategories.filter(c => c.type === 'video' || c.type === 'all');
+  const galleryCategories = allCategories.filter(c => c.type === 'gallery' || c.type === 'all');
+
+  const finalVideoCats = videoCategories.length > 0 ? videoCategories : allCategories;
+  const finalGalleryCats = galleryCategories.length > 0 ? galleryCategories : allCategories;
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '10px', color: 'var(--text-secondary)' }}>
+        <Loader2 size={28} className="spin" /> Loading page editor...
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
+      {/* Top Bar with Back Link and Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <Link to="/admin/pages" className="button button-neutral button-small">
+            <ArrowLeft size={14} /> Back to Pages
+          </Link>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            {isEditing ? 'Edit Page' : 'Add New Page'}
+          </h1>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {isEditing && (
+            <a
+              href={template === 'home' ? '/' : `/page/${slug || id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="button button-neutral button-small"
+            >
+              <ExternalLink size={14} /> View Live {template === 'home' ? 'Home' : 'Page'}
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={saving}
+            className="button button-primary"
+          >
+            {saving ? (
+              <>
+                <Loader2 size={15} className="spin" /> Saving...
+              </>
+            ) : (
+              <>
+                <Save size={15} /> {isEditing ? 'Update Page' : 'Publish Page'}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Notification Banner */}
+      {message.text && (
+        <div
+          style={{
+            padding: '14px 18px',
+            borderRadius: '10px',
+            marginBottom: '22px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontSize: '14px',
+            background: message.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
+            color: message.type === 'error' ? 'var(--danger)' : 'var(--success)',
+            border: `1px solid ${message.type === 'error' ? 'var(--danger)' : 'var(--success)'}`
+          }}
+        >
+          {message.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+          <span>{message.text}</span>
+        </div>
+      )}
+
+      {/* Main 2-Column Editor Grid */}
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
+        {/* Left Column: Title, Slug, Home Template Settings, Page Content */}
+        <div>
+          {/* Title Box */}
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <input
+              type="text"
+              placeholder="Enter page title (e.g. Home, About Us, Contact)..."
+              value={title}
+              onChange={handleTitleChange}
+              className="form-input"
+              style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                padding: '14px 18px',
+                height: 'auto'
+              }}
+              required
+            />
+          </div>
+
+          {/* Permalink / Slug Editor Box */}
+          <div className="permalink-box" style={{ marginBottom: '24px' }}>
+            <span className="permalink-label">Permalink:</span>
+            {editingSlugMode ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="permalink-prefix">{window.location.origin}/page/</span>
+                <input
+                  type="text"
+                  value={tempSlug}
+                  onChange={(e) => setTempSlug(e.target.value)}
+                  className="permalink-input"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveSlug}
+                  className="button button-small button-primary"
+                >
+                  <Check size={12} /> OK
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingSlugMode(false)}
+                  className="button button-small button-neutral"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <>
+                <a
+                  href={template === 'home' ? '/' : `/page/${slug || 'your-page'}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="permalink-url"
+                  title="Click to view live in a new tab"
+                >
+                  {window.location.origin}{template === 'home' ? '/' : `/page/${slug || 'untitled-page'}`}
+                </a>
+                <button
+                  type="button"
+                  onClick={handleStartEditSlug}
+                  className="button button-small button-neutral"
+                  style={{ padding: '2px 8px', fontSize: '11px', gap: '3px' }}
+                >
+                  <Edit2 size={11} /> Edit Slug
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* HOME TEMPLATE CONFIGURATION SETTINGS (Only shown when template === 'home') */}
+          {template === 'home' && (
+            <div style={{ marginBottom: '32px' }}>
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)',
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+              >
+                <Sparkles size={22} color="var(--primary-color)" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Home Template Configuration
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    Manage section titles, toggle visibility, select video & gallery categories, and customize promotional membership content.
+                  </p>
+                </div>
+              </div>
+
+              {/* 1. Hero Slider Settings */}
+              <div className="postbox" style={{ marginBottom: '20px' }}>
+                <div className="postbox-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sliders size={16} color="var(--primary-color)" />
+                    <h2>Section 1: Hero Slider Settings</h2>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+                    <input
+                      type="checkbox"
+                      checked={templateConfig.heroSlider?.enabled !== false}
+                      onChange={(e) =>
+                        setTemplateConfig(prev => ({
+                          ...prev,
+                          heroSlider: { ...prev.heroSlider, enabled: e.target.checked }
+                        }))
+                      }
+                    />
+                    <span>Enable Slider</span>
+                  </label>
+                </div>
+                <div className="postbox-inside" style={{ padding: '18px' }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                    The Hero Slider automatically pulls published Posts, Videos, and Photo Galleries. As new content is created, the slider animates through them with dedicated action buttons (Read Story, Watch Video, View Gallery).
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Slide Count</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="15"
+                        value={templateConfig.heroSlider?.slideCount || 5}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            heroSlider: { ...prev.heroSlider, slideCount: Number(e.target.value) }
+                          }))
+                        }
+                        className="form-input"
+                      />
+                      <div className="form-description">
+                        Number of dynamic slides (Posts, Videos, Galleries) to rotate.
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Slider Height (vh, px, %)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 90vh, 700px, 100vh"
+                        value={templateConfig.heroSlider?.height || '90vh'}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            heroSlider: { ...prev.heroSlider, height: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                      />
+                      <div className="form-description">
+                        Manage slider height in <strong>vh</strong>, <strong>px</strong>, or <strong>%</strong> (e.g. <code>90vh</code>, <code>650px</code>, <code>100%</code>).
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Heading Font Size (rem, px)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 3rem, 2.8rem, 48px"
+                        value={templateConfig.heroSlider?.titleFontSize || '3rem'}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            heroSlider: { ...prev.heroSlider, titleFontSize: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                      />
+                      <div className="form-description">
+                        Custom font size for the slide <code>&lt;h1&gt;</code> title (default: <strong>3rem</strong>).
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Content Alignment (Left / Center / Right)</label>
+                      <select
+                        value={templateConfig.heroSlider?.alignment || 'left'}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            heroSlider: { ...prev.heroSlider, alignment: e.target.value }
+                          }))
+                        }
+                        className="form-select"
+                      >
+                        <option value="left">⬅️ Left Aligned (Default)</option>
+                        <option value="center">⏺️ Center Aligned</option>
+                        <option value="right">➡️ Right Aligned</option>
+                      </select>
+                      <div className="form-description">
+                        Align the title, subtitle, badges, and CTA button to Left, Center, or Right.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Video Section Settings (Separated Categories) */}
+              <div className="postbox" style={{ marginBottom: '20px' }}>
+                <div className="postbox-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Film size={16} color="var(--primary-color)" />
+                    <h2>Section 2: Videos Section Settings</h2>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+                    <input
+                      type="checkbox"
+                      checked={templateConfig.videoSection?.enabled !== false}
+                      onChange={(e) =>
+                        setTemplateConfig(prev => ({
+                          ...prev,
+                          videoSection: { ...prev.videoSection, enabled: e.target.checked }
+                        }))
+                      }
+                    />
+                    <span>Enable Video Section</span>
+                  </label>
+                </div>
+                <div className="postbox-inside" style={{ padding: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Section Heading</label>
+                      <input
+                        type="text"
+                        value={templateConfig.videoSection?.title || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            videoSection: { ...prev.videoSection, title: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                        placeholder="Trending & Latest Videos"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Section Subtitle</label>
+                      <input
+                        type="text"
+                        value={templateConfig.videoSection?.subtitle || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            videoSection: { ...prev.videoSection, subtitle: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                        placeholder="Stream recent videos and explore video categories"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FolderTree size={15} color="var(--primary-color)" /> Video Categories (Cards 2 & 3)
+                    </h4>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                      Card 1 displays the Latest Video automatically. Select two separate Video Categories for Cards 2 & 3 with custom card thumbnail options:
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+                      {/* Video Category 1 */}
+                      <div style={{ padding: '12px', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <label className="form-label" style={{ fontWeight: 600 }}>Select Video Category 1</label>
+                        <select
+                          value={templateConfig.videoSection?.category1Id || ''}
+                          onChange={(e) =>
+                            setTemplateConfig(prev => ({
+                              ...prev,
+                              videoSection: { ...prev.videoSection, category1Id: e.target.value }
+                            }))
+                          }
+                          className="form-select"
+                          style={{ marginBottom: '10px' }}
+                        >
+                          <option value="">-- Choose Category --</option>
+                          {finalVideoCats.map(c => (
+                            <option key={c._id} value={c._id}>
+                              {c.name} {c.type ? `(${c.type})` : ''}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Custom Thumbnail for Cat 1 */}
+                        <label className="form-label" style={{ fontSize: '12px' }}>Custom Card Thumbnail (Optional)</label>
+                        {templateConfig.videoSection?.category1CustomImage ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img
+                              src={templateConfig.videoSection.category1CustomImage}
+                              alt="Cat 1 Preview"
+                              style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplateConfig(prev => ({
+                                  ...prev,
+                                  videoSection: { ...prev.videoSection, category1CustomImage: '' }
+                                }))
+                              }
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px' }}
+                            >
+                              <Trash2 size={12} /> Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => openPickerFor('cat1VideoCustomImage')}
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px', flex: 1 }}
+                            >
+                              <ImageIcon size={12} /> Media Library
+                            </button>
+                            <label className="button button-neutral button-small" style={{ fontSize: '11px', cursor: 'pointer' }}>
+                              <Upload size={12} />
+                              <input
+                                type="file"
+                                accept={ACCEPT_IMAGES}
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleLocalUploadFor(e, 'cat1VideoCustomImage')}
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Video Category 2 */}
+                      <div style={{ padding: '12px', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <label className="form-label" style={{ fontWeight: 600 }}>Select Video Category 2</label>
+                        <select
+                          value={templateConfig.videoSection?.category2Id || ''}
+                          onChange={(e) =>
+                            setTemplateConfig(prev => ({
+                              ...prev,
+                              videoSection: { ...prev.videoSection, category2Id: e.target.value }
+                            }))
+                          }
+                          className="form-select"
+                          style={{ marginBottom: '10px' }}
+                        >
+                          <option value="">-- Choose Category --</option>
+                          {finalVideoCats.map(c => (
+                            <option key={c._id} value={c._id}>
+                              {c.name} {c.type ? `(${c.type})` : ''}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Custom Thumbnail for Cat 2 */}
+                        <label className="form-label" style={{ fontSize: '12px' }}>Custom Card Thumbnail (Optional)</label>
+                        {templateConfig.videoSection?.category2CustomImage ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img
+                              src={templateConfig.videoSection.category2CustomImage}
+                              alt="Cat 2 Preview"
+                              style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplateConfig(prev => ({
+                                  ...prev,
+                                  videoSection: { ...prev.videoSection, category2CustomImage: '' }
+                                }))
+                              }
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px' }}
+                            >
+                              <Trash2 size={12} /> Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => openPickerFor('cat2VideoCustomImage')}
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px', flex: 1 }}
+                            >
+                              <ImageIcon size={12} /> Media Library
+                            </button>
+                            <label className="button button-neutral button-small" style={{ fontSize: '11px', cursor: 'pointer' }}>
+                              <Upload size={12} />
+                              <input
+                                type="file"
+                                accept={ACCEPT_IMAGES}
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleLocalUploadFor(e, 'cat2VideoCustomImage')}
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Gallery Section Settings (Separated Categories) */}
+              <div className="postbox" style={{ marginBottom: '20px' }}>
+                <div className="postbox-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Images size={16} color="var(--primary-color)" />
+                    <h2>Section 3: Galleries Section Settings</h2>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+                    <input
+                      type="checkbox"
+                      checked={templateConfig.gallerySection?.enabled !== false}
+                      onChange={(e) =>
+                        setTemplateConfig(prev => ({
+                          ...prev,
+                          gallerySection: { ...prev.gallerySection, enabled: e.target.checked }
+                        }))
+                      }
+                    />
+                    <span>Enable Gallery Section</span>
+                  </label>
+                </div>
+                <div className="postbox-inside" style={{ padding: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Section Heading</label>
+                      <input
+                        type="text"
+                        value={templateConfig.gallerySection?.title || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            gallerySection: { ...prev.gallerySection, title: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                        placeholder="Featured Photo Galleries"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Section Subtitle</label>
+                      <input
+                        type="text"
+                        value={templateConfig.gallerySection?.subtitle || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            gallerySection: { ...prev.gallerySection, subtitle: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                        placeholder="High-resolution photo albums and visual collections"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FolderTree size={15} color="var(--primary-color)" /> Gallery Categories (Cards 2 & 3)
+                    </h4>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                      Card 1 displays the Latest Gallery automatically. Select two separate Gallery Categories for Cards 2 & 3 with custom card thumbnail options:
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+                      {/* Gallery Category 1 */}
+                      <div style={{ padding: '12px', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <label className="form-label" style={{ fontWeight: 600 }}>Select Gallery Category 1</label>
+                        <select
+                          value={templateConfig.gallerySection?.category1Id || ''}
+                          onChange={(e) =>
+                            setTemplateConfig(prev => ({
+                              ...prev,
+                              gallerySection: { ...prev.gallerySection, category1Id: e.target.value }
+                            }))
+                          }
+                          className="form-select"
+                          style={{ marginBottom: '10px' }}
+                        >
+                          <option value="">-- Choose Category --</option>
+                          {finalGalleryCats.map(c => (
+                            <option key={c._id} value={c._id}>
+                              {c.name} {c.type ? `(${c.type})` : ''}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Custom Thumbnail for Gallery Cat 1 */}
+                        <label className="form-label" style={{ fontSize: '12px' }}>Custom Card Thumbnail (Optional)</label>
+                        {templateConfig.gallerySection?.category1CustomImage ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img
+                              src={templateConfig.gallerySection.category1CustomImage}
+                              alt="Gallery Cat 1 Preview"
+                              style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplateConfig(prev => ({
+                                  ...prev,
+                                  gallerySection: { ...prev.gallerySection, category1CustomImage: '' }
+                                }))
+                              }
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px' }}
+                            >
+                              <Trash2 size={12} /> Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => openPickerFor('cat1GalleryCustomImage')}
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px', flex: 1 }}
+                            >
+                              <ImageIcon size={12} /> Media Library
+                            </button>
+                            <label className="button button-neutral button-small" style={{ fontSize: '11px', cursor: 'pointer' }}>
+                              <Upload size={12} />
+                              <input
+                                type="file"
+                                accept={ACCEPT_IMAGES}
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleLocalUploadFor(e, 'cat1GalleryCustomImage')}
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Gallery Category 2 */}
+                      <div style={{ padding: '12px', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <label className="form-label" style={{ fontWeight: 600 }}>Select Gallery Category 2</label>
+                        <select
+                          value={templateConfig.gallerySection?.category2Id || ''}
+                          onChange={(e) =>
+                            setTemplateConfig(prev => ({
+                              ...prev,
+                              gallerySection: { ...prev.gallerySection, category2Id: e.target.value }
+                            }))
+                          }
+                          className="form-select"
+                          style={{ marginBottom: '10px' }}
+                        >
+                          <option value="">-- Choose Category --</option>
+                          {finalGalleryCats.map(c => (
+                            <option key={c._id} value={c._id}>
+                              {c.name} {c.type ? `(${c.type})` : ''}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Custom Thumbnail for Gallery Cat 2 */}
+                        <label className="form-label" style={{ fontSize: '12px' }}>Custom Card Thumbnail (Optional)</label>
+                        {templateConfig.gallerySection?.category2CustomImage ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img
+                              src={templateConfig.gallerySection.category2CustomImage}
+                              alt="Gallery Cat 2 Preview"
+                              style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplateConfig(prev => ({
+                                  ...prev,
+                                  gallerySection: { ...prev.gallerySection, category2CustomImage: '' }
+                                }))
+                              }
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px' }}
+                            >
+                              <Trash2 size={12} /> Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => openPickerFor('cat2GalleryCustomImage')}
+                              className="button button-neutral button-small"
+                              style={{ fontSize: '11px', flex: 1 }}
+                            >
+                              <ImageIcon size={12} /> Media Library
+                            </button>
+                            <label className="button button-neutral button-small" style={{ fontSize: '11px', cursor: 'pointer' }}>
+                              <Upload size={12} />
+                              <input
+                                type="file"
+                                accept={ACCEPT_IMAGES}
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleLocalUploadFor(e, 'cat2GalleryCustomImage')}
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Latest Posts / Stories Settings */}
+              <div className="postbox" style={{ marginBottom: '20px' }}>
+                <div className="postbox-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <BookOpen size={16} color="var(--primary-color)" />
+                    <h2>Section 4: Latest Posts / Stories Settings</h2>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+                    <input
+                      type="checkbox"
+                      checked={templateConfig.postsSection?.enabled !== false}
+                      onChange={(e) =>
+                        setTemplateConfig(prev => ({
+                          ...prev,
+                          postsSection: { ...prev.postsSection, enabled: e.target.checked }
+                        }))
+                      }
+                    />
+                    <span>Enable Posts Section</span>
+                  </label>
+                </div>
+                <div className="postbox-inside" style={{ padding: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Section Heading</label>
+                      <input
+                        type="text"
+                        value={templateConfig.postsSection?.title || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            postsSection: { ...prev.postsSection, title: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                        placeholder="Latest Stories & Articles"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Section Subtitle</label>
+                      <input
+                        type="text"
+                        value={templateConfig.postsSection?.subtitle || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            postsSection: { ...prev.postsSection, subtitle: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                        placeholder="Read our newest articles and folklore tales"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Post Count</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={templateConfig.postsSection?.count || 3}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            postsSection: { ...prev.postsSection, count: Number(e.target.value) }
+                          }))
+                        }
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Membership Promotional Section */}
+              <div className="postbox" style={{ marginBottom: '20px' }}>
+                <div className="postbox-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="var(--primary-color)" />
+                    <h2>Section 5: Membership Promotional Section</h2>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+                    <input
+                      type="checkbox"
+                      checked={templateConfig.membershipSection?.enabled !== false}
+                      onChange={(e) =>
+                        setTemplateConfig(prev => ({
+                          ...prev,
+                          membershipSection: { ...prev.membershipSection, enabled: e.target.checked }
+                        }))
+                      }
+                    />
+                    <span>Enable Membership Section</span>
+                  </label>
+                </div>
+                <div className="postbox-inside" style={{ padding: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Heading</label>
+                      <input
+                        type="text"
+                        value={templateConfig.membershipSection?.heading || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            membershipSection: { ...prev.membershipSection, heading: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Sub-heading</label>
+                      <input
+                        type="text"
+                        value={templateConfig.membershipSection?.subheading || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            membershipSection: { ...prev.membershipSection, subheading: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '16px' }}>
+                    <label className="form-label">Content / Description</label>
+                    <textarea
+                      rows={3}
+                      value={templateConfig.membershipSection?.content || ''}
+                      onChange={(e) =>
+                        setTemplateConfig(prev => ({
+                          ...prev,
+                          membershipSection: { ...prev.membershipSection, content: e.target.value }
+                        }))
+                      }
+                      className="form-input"
+                      style={{ resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Button Text</label>
+                      <input
+                        type="text"
+                        value={templateConfig.membershipSection?.buttonText || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            membershipSection: { ...prev.membershipSection, buttonText: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Button URL / Link</label>
+                      <input
+                        type="text"
+                        value={templateConfig.membershipSection?.buttonUrl || ''}
+                        onChange={(e) =>
+                          setTemplateConfig(prev => ({
+                            ...prev,
+                            membershipSection: { ...prev.membershipSection, buttonUrl: e.target.value }
+                          }))
+                        }
+                        className="form-input"
+                        placeholder="/page/about-us"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Promotional Image Picker */}
+                  <div className="form-group">
+                    <label className="form-label">Promotional Right-Side Image</label>
+                    {templateConfig.membershipSection?.image ? (
+                      <div>
+                        <div style={{ borderRadius: '8px', overflow: 'hidden', maxHeight: '180px', marginBottom: '10px', background: '#000' }}>
+                          <img
+                            src={templateConfig.membershipSection.image}
+                            alt="Membership preview"
+                            style={{ width: '100%', height: '180px', objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={() => openPickerFor('membershipImage')}
+                            className="button button-neutral button-small"
+                          >
+                            <ImageIcon size={13} /> Change Image
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplateConfig(prev => ({
+                                ...prev,
+                                membershipSection: { ...prev.membershipSection, image: '' }
+                              }))
+                            }
+                            className="button button-neutral button-small"
+                          >
+                            <Trash2 size={13} /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => openPickerFor('membershipImage')}
+                          className="button button-neutral"
+                        >
+                          <ImageIcon size={15} /> Select from Media Library
+                        </button>
+                        <label className="button button-neutral" style={{ cursor: 'pointer' }}>
+                          <Upload size={15} /> Upload Image
+                          <input
+                            type="file"
+                            accept={ACCEPT_IMAGES}
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleLocalUploadFor(e, 'membershipImage')}
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Standard Page Content Box */}
+          <div className="postbox">
+            <div className="postbox-header">
+              <h2>{template === 'home' ? 'Extra Page Content / SEO Notes' : 'Page Content'}</h2>
+            </div>
+            <div className="postbox-inside" style={{ padding: '16px' }}>
+              <RichEditor
+                value={content}
+                onChange={setContent}
+                placeholder={template === 'home' ? 'Optional extra rich text or SEO notes for home page...' : 'Write page content, add text, images, or media...'}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Publish Box, Attributes, Featured Banner */}
+        <div>
+          {/* Publish / Status Box */}
+          <div className="postbox">
+            <div className="postbox-header">
+              <h2>Publish Settings</h2>
+            </div>
+            <div className="postbox-inside">
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label">Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                  <option value="trash">Trash</option>
+                </select>
+              </div>
+
+              <div
+                style={{
+                  paddingTop: '12px',
+                  borderTop: '1px solid var(--border-color)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Move this page to trash?')) {
+                        setStatus('trash');
+                        handleSubmit({ preventDefault: () => {} });
+                      }
+                    }}
+                    className="button-link-delete"
+                  >
+                    Move to trash
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="button button-primary"
+                  style={{ marginLeft: 'auto' }}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={14} className="spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={14} /> {isEditing ? 'Update Page' : 'Publish Page'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Page Attributes (Template Selector) */}
+          <div className="postbox">
+            <div className="postbox-header">
+              <h2>Page Attributes</h2>
+            </div>
+            <div className="postbox-inside">
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label">Template</label>
+                <select
+                  value={template}
+                  onChange={(e) => setTemplate(e.target.value)}
+                  className="form-select"
+                  style={{ fontWeight: template === 'home' ? 700 : 400 }}
+                >
+                  <option value="default">Default Template</option>
+                  <option value="home">🏠 Home Page Template</option>
+                  <option value="fullwidth">Full Width (No Sidebar)</option>
+                  <option value="landing">Landing Page</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '0' }}>
+                <label className="form-label">Menu Order</label>
+                <input
+                  type="number"
+                  value={order}
+                  onChange={(e) => setOrder(e.target.value)}
+                  className="form-input"
+                  min="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Featured Banner Image */}
+          <div className="postbox">
+            <div className="postbox-header">
+              <h2>Featured / Banner Image</h2>
+            </div>
+            <div className="postbox-inside">
+              {banner ? (
+                <div>
+                  <div
+                    style={{
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      marginBottom: '12px',
+                      background: '#090e18',
+                      border: '1px solid var(--border-color)',
+                      maxHeight: '180px'
+                    }}
+                  >
+                    <img
+                      src={banner}
+                      alt="Banner Preview"
+                      style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => openPickerFor('banner')}
+                      className="button button-neutral button-small"
+                    >
+                      <ImageIcon size={13} /> Change Image
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBanner('')}
+                      className="button button-neutral button-small"
+                    >
+                      <Trash2 size={13} /> Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div
+                    onClick={() => openPickerFor('banner')}
+                    style={{
+                      border: '2px dashed var(--border-color)',
+                      borderRadius: '8px',
+                      padding: '24px 16px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      transition: 'border-color 0.2s',
+                      marginBottom: '10px'
+                    }}
+                  >
+                    <ImageIcon size={32} style={{ opacity: 0.35, marginBottom: '8px' }} />
+                    <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Set Featured Image
+                    </p>
+                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Select from Media Library or upload
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => openPickerFor('banner')}
+                      className="button button-neutral button-small"
+                      style={{ flex: 1, fontSize: '12px' }}
+                    >
+                      <ImageIcon size={13} /> Media Library
+                    </button>
+                    <label
+                      className="button button-neutral button-small"
+                      style={{ fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      <Upload size={13} /> Upload
+                      <input
+                        type="file"
+                        accept={ACCEPT_IMAGES}
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleLocalUploadFor(e, 'banner')}
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </form>
+
+      {/* Global Media Picker Modal */}
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={handleMediaSelect}
+        mediaType="image"
+        title="Select Image from Media Library"
+      />
+    </div>
+  );
+};
+
+export default PageEditor;

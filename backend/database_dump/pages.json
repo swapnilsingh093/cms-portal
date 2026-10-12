@@ -1,0 +1,321 @@
+[
+  {
+    "_id": "6ac12ebb73c416c2ffd213c7",
+    "title": "About Us",
+    "slug": "about-us",
+    "content": "<h2>Welcome to our Modern Media Portal</h2>\n<p>We are a dedicated multimedia platform curating top-tier videos, rich photo galleries, and compelling editorial stories.&nbsp;Our mission is to bring meaningful content, high visual quality, and effortless access to audiences worldwide.</p>",
+    "banner": "/uploads/images/indian_hot_girl_in_pink_bra_lying_on_bessy_bed_by_niranjanbara_digr90g-pre-1790485942702-434637203.jpg",
+    "template": "default",
+    "status": "published",
+    "order": 3,
+    "metaTitle": "",
+    "metaDescription": "",
+    "createdAt": "2026-10-03T16:35:07.866Z",
+    "updatedAt": "2026-10-03T18:25:27.774Z",
+    "__v": 0,
+    "templateConfig": {
+      "heroSlider": {
+        "enabled": true,
+        "mode": "dynamic",
+        "slideCount": 5,
+        "height": "90vh",
+        "titleFontSize": "3rem",
+        "alignment": "left"
+      },
+      "videoSection": {
+        "enabled": true,
+        "title": "Trending & Latest Videos",
+        "subtitle": "Stream recent videos and explore video categories",
+        "category1Id": "",
+        "category2Id": "",
+        "category1CustomImage": "",
+        "category2CustomImage": ""
+      },
+      "gallerySection": {
+        "enabled": true,
+        "title": "Featured Photo Galleries",
+        "subtitle": "High-resolution photo albums and visual collections",
+        "category1Id": "",
+        "category2Id": "",
+        "category1CustomImage": "",
+        "category2CustomImage": ""
+      },
+      "postsSection": {
+        "enabled": true,
+        "title": "Latest Stories & Articles",
+        "subtitle": "Read our newest articles and folklore tales",
+        "count": 3
+      },
+      "membershipSection": {
+        "enabled": true,
+        "heading": "Unlock Unlimited Access to Exclusive Media",
+        "subheading": "Join Our Community",
+        "content": "Get unlimited access to high-definition video streams, full-resolution photo albums, and deep folklore stories. Support our independent creators and join our exclusive community today.",
+        "buttonText": "Join Today",
+        "buttonUrl": "/page/about-us",
+        "image": ""
+      },
+      "banner": {
+        "height": "420px",
+        "heading": "About Us",
+        "subheading": "Discover our mission, stories, and multimedia universe",
+        "alignment": "center",
+        "overlayOpacity": 0.5
+      }
+    }
+  },
+  {
+    "_id": "6ac1302c25349d8e03fae38a",
+    "title": "Home",
+    "slug": "home",
+    "content": "<p>Welcome to our media platform.</p>",
+    "banner": "",
+    "template": "home",
+    "status": "published",
+    "order": 1,
+    "metaTitle": "Home",
+    "metaDescription": "",
+    "createdAt": "2026-10-03T16:41:16.106Z",
+    "updatedAt": "2026-10-03T18:21:30.187Z",
+    "__v": 0,
+    "templateConfig": {
+      "heroSlider": {
+        "enabled": true,
+        "mode": "dynamic",
+        "slideCount": 3,
+        "height": "85vh",
+        "titleFontSize": "2rem",
+        "alignment": "left"
+      },
+      "videoSection": {
+        "enabled": true,
+        "title": "Trending & Latest Videos",
+        "subtitle": "Stream recent videos and explore video categories",
+        "category1Id": "6ac1325fdf83ec507b6c68ac",
+        "category2Id": "6ac1325fdf83ec507b6c68ad",
+        "category1CustomImage": "",
+        "category2CustomImage": ""
+      },
+      "gallerySection": {
+        "enabled": true,
+        "title": "Featured Photo Galleries",
+        "subtitle": "High-resolution photo albums and visual collections",
+        "category1Id": "6ac13255c740c2f75af0db9d",
+        "category2Id": "6ac13255c740c2f75af0db9e",
+        "category1CustomImage": "",
+        "category2CustomImage": ""
+      },
+      "postsSection": {
+        "enabled": true,
+        "title": "Latest Stories & Articles",
+        "subtitle": "Read our newest articles and folklore tales",
+        "count": 3
+      },
+      "membershipSection": {
+        "enabled": true,
+        "heading": "Unlock Unlimited Access to Exclusive Media",
+        "subheading": "Join Our Community",
+        "content": "Get unlimited access to high-definition video streams, full-resolution photo albums, and deep folklore stories. Support our independent creators and join our exclusive community today.",
+        "buttonText": "Join Today",
+        "buttonUrl": "/page/about-us",
+        "image": "/uploads/images/WhatsApp-Image-2026-09-26-at-20-52-51-1790490902432-954911024.jpeg"
+      }
+    }
+  },
+  {
+    "_id": "6ac1349b541cbd5c6a305e1b",
+    "title": "Videos",
+    "slug": "videos",
+    "content": "",
+    "banner": "",
+    "template": "videos",
+    "status": "published",
+    "order": 0,
+    "metaTitle": "Videos",
+    "metaDescription": "",
+    "createdAt": "2026-10-03T17:00:11.115Z",
+    "updatedAt": "2026-10-03T19:16:34.780Z",
+    "__v": 0,
+    "templateConfig": {
+      "banner": {
+        "type": "video",
+        "mediaUrl": "/uploads/videos/16.mp4",
+        "mediaId": null,
+        "height": "75vh",
+        "heading": "Explore Our Video Stories",
+        "subheading": "Stories that bring every moment to life",
+        "description": "Watch cinematic journeys, folklore tales, and exclusive documentary films.",
+        "buttonText": "Explore Videos",
+        "buttonUrl": "#categories",
+        "headingFontSize": "2rem",
+        "subheadingFontSize": "0.72rem",
+        "descriptionFontSize": "1rem",
+        "buttonFontSize": "0.95rem",
+        "alignment": "left",
+        "verticalPosition": "center",
+        "overlayStrength": 0
+      },
+      "layout": {
+        "sidebar": "with_sidebar"
+      },
+      "categories": {
+        "heading": "Browse Video Categories",
+        "subtitle": "Explore parent categories and discover subtopics",
+        "perPage": 6
+      },
+      "sidebar": {
+        "enabled": true,
+        "latestVideosCount": 5,
+        "mostViewedVideosCount": 2,
+        "latestPostsCount": 3,
+        "latestGalleriesCount": 3
+      }
+    }
+  },
+  {
+    "_id": "6ac1349b541cbd5c6a305e1c",
+    "title": "Stories",
+    "slug": "stories",
+    "content": "<p>Welcome to our editorial journal and stories portal.</p>",
+    "banner": "",
+    "template": "stories",
+    "status": "published",
+    "order": 1,
+    "metaTitle": "",
+    "metaDescription": "",
+    "createdAt": "2026-10-03T17:00:11.122Z",
+    "updatedAt": "2026-10-06T02:27:13.861Z",
+    "__v": 0,
+    "templateConfig": {
+      "banner": {
+        "type": "image",
+        "mediaUrl": "/uploads/images/indian_hot_girl_in_pink_bra_lying_on_bessy_bed_by_niranjanbara_digr90g-pre-1790485942702-434637203.jpg",
+        "mediaId": null,
+        "height": "60vh",
+        "heading": "The Intimate Journal",
+        "subheading": "Stories of Desire, Connection & Experience",
+        "description": "Tempting stories of desire, attraction, passion, and intimate encounters.",
+        "buttonText": "Explore Topics",
+        "buttonUrl": "#categories",
+        "headingFontSize": "2rem",
+        "subheadingFontSize": "0.72rem",
+        "descriptionFontSize": "1.05rem",
+        "buttonFontSize": "0.95rem",
+        "alignment": "left",
+        "verticalPosition": "center",
+        "overlayStrength": 0
+      },
+      "layout": {
+        "sidebar": "with_sidebar"
+      },
+      "categories": {
+        "heading": "Editorial Columns & Categories",
+        "subtitle": "Browse parent story categories to explore in-depth topics",
+        "perPage": 6
+      },
+      "sidebar": {
+        "enabled": true,
+        "latestPostsCount": 5,
+        "videoCategoriesEnabled": true,
+        "galleryCategoriesEnabled": true,
+        "latestVideoEnabled": true
+      }
+    }
+  },
+  {
+    "_id": "6ac1349b541cbd5c6a305e1d",
+    "title": "Galleries",
+    "slug": "galleries",
+    "content": "<p>Explore high-resolution visual stories, photography albums, and curated moments.</p>",
+    "banner": "",
+    "template": "galleries",
+    "status": "published",
+    "order": 2,
+    "metaTitle": "Visual Archives & Photo Galleries",
+    "metaDescription": "Explore curated photo albums and fine photography collections.",
+    "createdAt": "2026-10-03T17:00:11.124Z",
+    "updatedAt": "2026-10-04T16:12:26.673Z",
+    "__v": 0,
+    "templateConfig": {
+      "banner": {
+        "type": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=1920&q=85",
+        "mediaId": null,
+        "height": "65vh",
+        "heading": "Photo Galleries & Visual Archives",
+        "subheading": "Curated High-Resolution Photography",
+        "description": "Explore curated photo albums, master galleries, and evocative visual collections.",
+        "buttonText": "Browse Collections",
+        "buttonUrl": "#categories",
+        "headingFontSize": "2rem",
+        "subheadingFontSize": "0.72rem",
+        "descriptionFontSize": "1rem",
+        "buttonFontSize": "0.95rem",
+        "alignment": "left",
+        "verticalPosition": "center",
+        "overlayStrength": 0.35
+      },
+      "layout": {
+        "sidebar": "with_sidebar"
+      },
+      "categories": {
+        "heading": "Photo Gallery Categories",
+        "subtitle": "Browse collections by photography theme and parent categories",
+        "perPage": 6
+      },
+      "sidebar": {
+        "enabled": true,
+        "latestGalleriesCount": 5,
+        "latestVideosCount": 3,
+        "latestPostsCount": 3,
+        "categoriesWidgetEnabled": true
+      }
+    }
+  },
+  {
+    "_id": "6ac1349b541cbd5c6a305e1e",
+    "title": "Contact us",
+    "slug": "contact-us",
+    "content": "<h2>Contact Us</h2><p>Feel free to reach out to us for any queries or support.</p>",
+    "banner": "",
+    "template": "default",
+    "status": "published",
+    "order": 5,
+    "metaTitle": "",
+    "metaDescription": "",
+    "createdAt": "2026-10-03T17:00:11.128Z",
+    "updatedAt": "2026-10-03T17:00:11.128Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac1393225349d8e03fb38b9",
+    "title": "Search by Videos",
+    "slug": "search",
+    "content": "",
+    "banner": "",
+    "template": "search-by-video",
+    "status": "published",
+    "order": 0,
+    "metaTitle": "Search",
+    "metaDescription": "",
+    "createdAt": "2026-10-03T17:19:46.122Z",
+    "updatedAt": "2026-10-03T18:26:18.314Z",
+    "__v": 0,
+    "templateConfig": {
+      "bannerType": "video",
+      "bannerUrl": "/uploads/videos/16.mp4",
+      "overlayStrength": 40,
+      "heading": "Search by Video",
+      "subheading": "Find your favorite desi videos by choice, age, or marital status",
+      "headingFontSize": "2.5rem",
+      "subheadingFontSize": "1.1rem",
+      "headingColor": "#ffffff",
+      "subheadingColor": "rgba(255, 255, 255, 0.8)",
+      "accentColor": "#f2545f",
+      "alignment": "center",
+      "defaultChoice": [],
+      "defaultAge": "",
+      "defaultMarital": ""
+    }
+  }
+]

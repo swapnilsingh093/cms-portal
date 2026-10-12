@@ -1,0 +1,73 @@
+[
+  {
+    "_id": "6ac13561eab115717ff60e41",
+    "title": "Main Header Navigation",
+    "location": "header",
+    "items": [
+      {
+        "title": "Home",
+        "type": "custom",
+        "refId": null,
+        "url": "/",
+        "target": "_self",
+        "order": 0,
+        "children": [],
+        "_id": "6ac1e4b4b7c75053904604d0"
+      },
+      {
+        "title": "Videos",
+        "type": "page",
+        "refId": null,
+        "url": "/page/videos",
+        "target": "_self",
+        "order": 1,
+        "children": [],
+        "_id": "6ac1e4b4b7c75053904604d1"
+      },
+      {
+        "title": "Stories",
+        "type": "page",
+        "refId": null,
+        "url": "/page/stories",
+        "target": "_self",
+        "order": 2,
+        "children": [],
+        "_id": "6ac1e4b4b7c75053904604d2"
+      },
+      {
+        "title": "Galleries",
+        "type": "page",
+        "refId": null,
+        "url": "/page/galleries",
+        "target": "_self",
+        "order": 3,
+        "children": [],
+        "_id": "6ac1e4b4b7c75053904604d3"
+      },
+      {
+        "title": "Search by Videos",
+        "type": "page",
+        "refId": "6ac1393225349d8e03fb38b9",
+        "url": "/page/search",
+        "target": "_self",
+        "order": 4,
+        "children": [],
+        "_id": "6ac1e4b4b7c75053904604d4"
+      },
+      {
+        "title": "About Us",
+        "type": "page",
+        "refId": "6ac12ebb73c416c2ffd213c7",
+        "url": "/page/about-us",
+        "target": "_self",
+        "order": 5,
+        "children": [],
+        "_id": "6ac1e4b4b7c75053904604d5"
+      }
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-03T17:03:29.571Z",
+    "updatedAt": "2026-10-04T05:31:32.663Z",
+    "__v": 1
+  }
+]

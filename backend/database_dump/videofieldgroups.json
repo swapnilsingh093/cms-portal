@@ -1,0 +1,93 @@
+[
+  {
+    "_id": "6ac3b2b43b3f85279c90bc8d",
+    "title": "Choice Category",
+    "key": "choicecategory",
+    "type": "checkbox",
+    "options": [
+      "Young Girl",
+      "Wife",
+      "Sasur",
+      "Uncle",
+      "Old Man",
+      "Desi Chut"
+    ],
+    "placeholder": "",
+    "description": "Select multiple choice categories",
+    "order": 2,
+    "isSystem": true,
+    "showInSearch": true,
+    "showInEditor": true,
+    "isActive": true,
+    "__v": 2,
+    "createdAt": "2026-10-05T14:22:44.745Z",
+    "updatedAt": "2026-10-06T05:00:14.400Z"
+  },
+  {
+    "_id": "6ac3b2b43b3f85279c90bc8e",
+    "title": "Age Group",
+    "key": "agegroup",
+    "type": "radio",
+    "options": [
+      "20-25 yrs",
+      "25-30 yrs",
+      "30-35 yrs",
+      "35-40 yrs",
+      "40-45 yrs",
+      "45-50 yrs",
+      "50-55 yrs",
+      "55-60 yrs"
+    ],
+    "placeholder": "",
+    "description": "Select a single age bracket",
+    "order": 3,
+    "isSystem": true,
+    "showInSearch": true,
+    "showInEditor": true,
+    "isActive": true,
+    "__v": 8,
+    "createdAt": "2026-10-05T14:22:44.745Z",
+    "updatedAt": "2026-10-06T04:58:28.722Z"
+  },
+  {
+    "_id": "6ac3b2b43b3f85279c90bc8f",
+    "title": "Marital Status",
+    "key": "maritalstatus",
+    "type": "radio",
+    "options": [
+      "Married",
+      "Un-Married"
+    ],
+    "placeholder": "",
+    "description": "Select marital status",
+    "order": 1,
+    "isSystem": true,
+    "showInSearch": true,
+    "showInEditor": true,
+    "isActive": true,
+    "__v": 0,
+    "createdAt": "2026-10-05T14:22:44.745Z",
+    "updatedAt": "2026-10-06T04:59:32.287Z"
+  },
+  {
+    "_id": "6ac480adfdd49d3e57bf155a",
+    "title": "Office Type",
+    "key": "custom_o",
+    "type": "select",
+    "options": [
+      "Girl",
+      "Aunty",
+      "Fucking Teen"
+    ],
+    "placeholder": "",
+    "description": "",
+    "order": 4,
+    "isSystem": false,
+    "showInSearch": true,
+    "showInEditor": true,
+    "isActive": true,
+    "createdAt": "2026-10-06T05:01:33.180Z",
+    "updatedAt": "2026-10-06T05:02:09.842Z",
+    "__v": 1
+  }
+]

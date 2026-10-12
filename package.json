@@ -1,0 +1,17 @@
+{
+  "name": "cms-portal-root",
+  "version": "1.0.0",
+  "description": "Cross-platform Node + React CMS for Videos, Galleries, and Stories",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "node ./node_modules/concurrently/dist/bin/concurrently.js \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "seed": "npm run seed --prefix backend",
+    "db:dump": "npm run db:dump --prefix backend",
+    "db:restore": "npm run db:restore --prefix backend",
+    "db:restore:force": "npm run db:restore:force --prefix backend",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
+}

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+*/node_modules/
+package-lock.json
+
+# Environment & Credentials
+.env
+backend/.env
+*.local
+
+# Media & Heavy Uploads (Managed directly from Pendrive)
+backend/uploads/
+backend/uploads/*
+backend/public/uploads/*
+backend/*.tar
+backend/*.tar.gz
+backend/*.zip
+backend/database_backup_*/
+
+# Production builds & cache
+dist/
+build/
+frontend/dist/
+.cache/
+
+# OS specific files
+.DS_Store
+._*
+*/._*
+Thumbs.db
