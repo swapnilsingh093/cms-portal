@@ -29,7 +29,7 @@ const getMediaUrl = (url) => {
 };
 
 /**
- * Photorealistic Spiral Coil Wire Binding (matches spiral notebook look)
+ * Photorealistic Spiral Coil Wire Binding
  */
 function SpiralCoilBinding({ height = 620 }) {
   const pitch = 22;
@@ -89,11 +89,7 @@ function SpiralCoilBinding({ height = 620 }) {
 }
 
 /**
- * Modern High-Performance Photobook Modal:
- * - 100% Uncropped Faces & Subjects (Aspect-Ratio Preserved with Ambient Fill)
- * - Seamless 2-Page Layflat Panorama (NO center book crease cutting the image)
- * - Clean Layout Balance: 1 Full + 2 Dual, 2 Dual + 1 Full, 1 Full + 1 Full, or 2-Page Panorama
- * - NO 2-Left + 2-Right Cluttered Slices
+ * Modern High-Performance Photobook Modal with 3D Page Turning Engine
  */
 const BookGalleryLayout = ({ gallery, onClose }) => {
   const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
@@ -104,6 +100,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
   const [filmstripOpen, setFilmstripOpen] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const [isFlipping, setIsFlipping] = useState(null); // 'next' | 'prev' | null
+  const [isBookOpening, setIsBookOpening] = useState(true);
 
   const modalContainerRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -136,7 +133,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       const ctx = audioContextRef.current;
       if (ctx.state === "suspended") ctx.resume();
 
-      const duration = 0.18;
+      const duration = 0.22;
       const bufferSize = ctx.sampleRate * duration;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -166,9 +163,18 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       gain.connect(ctx.destination);
       noise.start();
     } catch {
-      // Audio autoplay policy fallback
+      // Audio autoplay fallback
     }
   }, [soundEnabled]);
+
+  // Initial Book Opening Animation
+  useEffect(() => {
+    playPageTurnSound();
+    const timer = setTimeout(() => {
+      setIsBookOpening(false);
+    }, 850);
+    return () => clearTimeout(timer);
+  }, [playPageTurnSound]);
 
   /**
    * Curate gallery photos into clean, uncropped spreads:
@@ -176,7 +182,6 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
    * 2. Left 1 Full + Right 2 Dual
    * 3. Left 2 Dual + Right 1 Full
    * 4. Left 1 Full + Right 1 Full
-   * (NO 2-left + 2-right clutter!)
    */
   const spreads = useMemo(() => {
     const list = [];
@@ -212,9 +217,8 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
     let pageNum = 1;
 
     // Controlled rhythm of spreads:
-    // Every pattern pairs either 1-page full with 2-page dual, or 1-full with 1-full, or seamless 2-page panorama
     const patternCycle = [
-      "panorama",      // 2-page seamless panorama (no center seam)
+      "panorama",      // 2-page seamless panorama
       "single_dual",   // Left = 1 Full, Right = 2 Dual
       "single_single", // Left = 1 Full, Right = 1 Full
       "dual_single",   // Left = 2 Dual, Right = 1 Full
@@ -407,7 +411,10 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
   const totalSpreads = spreads.length;
   const currentSpread = spreads[currentSpreadIndex] || spreads[0];
 
-  // Navigation handlers
+  // 3D Flip Duration in ms
+  const FLIP_DURATION = 580;
+
+  // Navigation handlers with physical 3D page turn
   const goToNextSpread = useCallback(() => {
     if (isFlipping) return;
     if (currentSpreadIndex < totalSpreads - 1) {
@@ -416,7 +423,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       setTimeout(() => {
         setCurrentSpreadIndex((prev) => prev + 1);
         setIsFlipping(null);
-      }, 320);
+      }, FLIP_DURATION);
     }
   }, [currentSpreadIndex, totalSpreads, isFlipping, playPageTurnSound]);
 
@@ -428,7 +435,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       setTimeout(() => {
         setCurrentSpreadIndex((prev) => prev - 1);
         setIsFlipping(null);
-      }, 320);
+      }, FLIP_DURATION);
     }
   }, [currentSpreadIndex, isFlipping, playPageTurnSound]);
 
@@ -440,7 +447,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       setTimeout(() => {
         setCurrentSpreadIndex(index);
         setIsFlipping(null);
-      }, 280);
+      }, FLIP_DURATION);
     },
     [currentSpreadIndex, isFlipping, playPageTurnSound]
   );
@@ -453,13 +460,17 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
         setCurrentSpreadIndex((prev) => {
           if (prev < totalSpreads - 1) {
             playPageTurnSound();
+            setIsFlipping("next");
+            setTimeout(() => {
+              setIsFlipping(null);
+            }, FLIP_DURATION);
             return prev + 1;
           } else {
             setAutoPlay(false);
             return prev;
           }
         });
-      }, 5000);
+      }, 5500);
     }
     return () => {
       if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
@@ -603,13 +614,11 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
         >
           {p && (
             <>
-              {/* Ambient blur fill so background matches photo colors */}
               <div
                 className="page-ambient-blur-bg"
                 style={{ backgroundImage: `url(${getMediaUrl(p.url)})` }}
                 aria-hidden="true"
               />
-              {/* Uncropped main photo - face, head, and full body 100% visible */}
               <img
                 src={getMediaUrl(p.url)}
                 alt={p.title || "Gallery Photo"}
@@ -907,7 +916,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
         <button
           className={`book-nav-arrow arrow-left ${currentSpreadIndex === 0 ? "disabled" : ""}`}
           onClick={goToPrevSpread}
-          disabled={currentSpreadIndex === 0}
+          disabled={currentSpreadIndex === 0 || !!isFlipping}
           aria-label="Previous Page"
           title="Previous Page (Left Arrow)"
         >
@@ -918,7 +927,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
         <button
           className={`book-nav-arrow arrow-right ${currentSpreadIndex === totalSpreads - 1 ? "disabled" : ""}`}
           onClick={goToNextSpread}
-          disabled={currentSpreadIndex === totalSpreads - 1}
+          disabled={currentSpreadIndex === totalSpreads - 1 || !!isFlipping}
           aria-label="Next Page"
           title="Next Page (Right Arrow)"
         >
@@ -928,7 +937,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
         {/* 3D BOOK STRUCTURE */}
         <div
           className={`artisan-book-casing binding-${bindingType} ${
-            isFlipping ? `flipping-${isFlipping}` : ""
+            isBookOpening ? "book-opening" : ""
           }`}
         >
           {/* Stacked Paper Edges */}
@@ -944,7 +953,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
           <div
             className={`artisan-book-pages ${
               currentSpread.type === "panorama_spread" ? "is-panorama-spread" : ""
-            }`}
+            } ${isFlipping ? `is-flipping-${isFlipping}` : ""}`}
           >
             {currentSpread.type === "panorama_spread" ? (
               /* SEAMLESS 2-PAGE SPREAD (NO CENTER LINE CUTTING THE IMAGE) */
@@ -985,17 +994,22 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
                 </div>
               </div>
             ) : (
-              /* REGULAR 2-PAGE SPREAD */
+              /* REGULAR 2-PAGE SPREAD WITH 3D PAGE TURNING ENGINE */
               <>
-                {/* LEFT PAGE */}
+                {/* STATIC LEFT PAGE */}
                 <div
                   className="artisan-page page-left"
                   onClick={() => {
-                    if (currentSpreadIndex > 0) goToPrevSpread();
+                    if (currentSpreadIndex > 0 && !isFlipping) goToPrevSpread();
                   }}
                 >
                   <div className="page-paper-surface">
-                    {renderPage(currentSpread.leftPage, "left")}
+                    {renderPage(
+                      isFlipping === "prev" && spreads[currentSpreadIndex - 1]
+                        ? spreads[currentSpreadIndex - 1].leftPage
+                        : currentSpread.leftPage,
+                      "left"
+                    )}
                   </div>
                   <div className="page-gutter-shadow left-gutter" />
                   <div className="page-turn-hint-corner corner-left" title="Click to go back">
@@ -1009,25 +1023,69 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
                 ) : (
                   <div className="artisan-center-spine" aria-hidden="true">
                     <div className="spine-deep-crease" />
-                    <div className="spine-highlight-stitch" />
                   </div>
                 )}
 
-                {/* RIGHT PAGE */}
+                {/* STATIC RIGHT PAGE */}
                 <div
                   className="artisan-page page-right"
                   onClick={() => {
-                    if (currentSpreadIndex < totalSpreads - 1) goToNextSpread();
+                    if (currentSpreadIndex < totalSpreads - 1 && !isFlipping) goToNextSpread();
                   }}
                 >
                   <div className="page-paper-surface">
-                    {renderPage(currentSpread.rightPage, "right")}
+                    {renderPage(
+                      isFlipping === "next" && spreads[currentSpreadIndex + 1]
+                        ? spreads[currentSpreadIndex + 1].rightPage
+                        : currentSpread.rightPage,
+                      "right"
+                    )}
                   </div>
                   <div className="page-gutter-shadow right-gutter" />
                   <div className="page-turn-hint-corner corner-right" title="Click to go next">
                     <ChevronRight size={16} />
                   </div>
                 </div>
+
+                {/* 3D TURNING LEAF: FORWARD FLIP (Turns from right to left) */}
+                {isFlipping === "next" && spreads[currentSpreadIndex + 1] && (
+                  <div className="artisan-turning-leaf turning-forward" aria-hidden="true">
+                    <div className="leaf-face leaf-front">
+                      <div className="page-paper-surface">
+                        {renderPage(currentSpread.rightPage, "right")}
+                      </div>
+                      <div className="leaf-fold-highlight" />
+                      <div className="leaf-sweep-shadow" />
+                    </div>
+                    <div className="leaf-face leaf-back">
+                      <div className="page-paper-surface">
+                        {renderPage(spreads[currentSpreadIndex + 1].leftPage, "left")}
+                      </div>
+                      <div className="leaf-fold-highlight" />
+                      <div className="leaf-sweep-shadow" />
+                    </div>
+                  </div>
+                )}
+
+                {/* 3D TURNING LEAF: BACKWARD FLIP (Turns from left to right) */}
+                {isFlipping === "prev" && spreads[currentSpreadIndex - 1] && (
+                  <div className="artisan-turning-leaf turning-backward" aria-hidden="true">
+                    <div className="leaf-face leaf-front">
+                      <div className="page-paper-surface">
+                        {renderPage(spreads[currentSpreadIndex - 1].rightPage, "right")}
+                      </div>
+                      <div className="leaf-fold-highlight" />
+                      <div className="leaf-sweep-shadow" />
+                    </div>
+                    <div className="leaf-face leaf-back">
+                      <div className="page-paper-surface">
+                        {renderPage(currentSpread.leftPage, "left")}
+                      </div>
+                      <div className="leaf-fold-highlight" />
+                      <div className="leaf-sweep-shadow" />
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
