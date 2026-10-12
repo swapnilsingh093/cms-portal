@@ -50,6 +50,7 @@ const GalleryDetailContent = ({
   const [copied, setCopied] = useState(false);
   const [relatedAlbums, setRelatedAlbums] = useState([]);
   const [viewMode, setViewMode] = useState("masonry"); // "masonry" | "grid"
+  const [bookModalOpen, setBookModalOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -508,25 +509,33 @@ const GalleryDetailContent = ({
               {photos.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setViewMode(viewMode === "book" ? "masonry" : "book")}
+                  onClick={() => setBookModalOpen(true)}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "7px",
                     padding: "8px 18px",
                     borderRadius: "999px",
-                    background: viewMode === "book" ? "linear-gradient(135deg, #3b82f6, #2563eb)" : "linear-gradient(135deg, #FF5A36, #FF8552)",
+                    background: "linear-gradient(135deg, #FF5A36, #FF8552)",
                     border: "1px solid rgba(255, 255, 255, 0.25)",
                     color: "#ffffff",
                     fontSize: "0.85rem",
                     fontWeight: 700,
                     cursor: "pointer",
-                    boxShadow: viewMode === "book" ? "0 4px 14px rgba(59, 130, 246, 0.4)" : "0 4px 14px rgba(255, 90, 54, 0.4)",
+                    boxShadow: "0 4px 14px rgba(255, 90, 54, 0.4)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(255, 90, 54, 0.55)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(255, 90, 54, 0.4)";
                   }}
                 >
                   <BookOpen size={15} />
-                  <span>{viewMode === "book" ? "Standard Layout" : "Book Gallery Layout"}</span>
+                  <span>Book Gallery Layout</span>
                 </button>
               )}
 
@@ -582,7 +591,7 @@ const GalleryDetailContent = ({
           className={`gallery-detail-layout ${isSidebarEnabled ? "with-sidebar" : "without-sidebar"}`}
           style={{
             display: "grid",
-            gridTemplateColumns: (isSidebarEnabled && viewMode !== "book") ? "minmax(0, 1fr) 330px" : "1fr",
+            gridTemplateColumns: isSidebarEnabled ? "minmax(0, 1fr) 330px" : "1fr",
             gap: "40px",
             alignItems: "start",
           }}
@@ -604,14 +613,14 @@ const GalleryDetailContent = ({
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--g-text, var(--text-primary, #ffffff))" }}>
-                  {viewMode === "book" ? "Interactive 3D Photobook Album" : "High-Definition Photo Stream"}
+                  High-Definition Photo Stream
                 </span>
                 <span style={{ fontSize: "0.8rem", color: "var(--g-text-muted, var(--text-secondary, #94a3b8))" }}>
-                  {viewMode === "book" ? "(Click pages or arrows to flip through book)" : "(Click any photo to open interactive popup lightbox)"}
+                  (Click any photo to open interactive popup lightbox)
                 </span>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 <button
                   type="button"
                   onClick={() => setViewMode("masonry")}
@@ -656,10 +665,11 @@ const GalleryDetailContent = ({
                   <LayoutGrid size={13} /> Grid
                 </button>
 
+                {/* 3D Photobook Modal Trigger */}
                 <button
                   type="button"
-                  onClick={() => setViewMode("book")}
-                  title="3D Interactive Photobook Album"
+                  onClick={() => setBookModalOpen(true)}
+                  title="Open 3D Interactive Photobook Popup Modal"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -668,12 +678,20 @@ const GalleryDetailContent = ({
                     borderRadius: "8px",
                     fontSize: "0.78rem",
                     fontWeight: 700,
-                    border: "none",
-                    background: viewMode === "book" ? "linear-gradient(135deg, #FF5A36, #FF8552)" : "rgba(255,255,255,0.06)",
-                    border: viewMode === "book" ? "1px solid #FF5A36" : "1px solid transparent",
-                    color: viewMode === "book" ? "#111" : "var(--g-text-muted, var(--text-secondary, #94a3b8))",
+                    border: "1px solid rgba(255, 90, 54, 0.4)",
+                    background: "linear-gradient(135deg, #FF5A36, #FF8552)",
+                    color: "#ffffff",
                     cursor: "pointer",
-                    boxShadow: viewMode === "book" ? "0 4px 14px rgba(255, 90, 54, 0.4)" : "none",
+                    boxShadow: "0 2px 10px rgba(255, 90, 54, 0.35)",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(255, 90, 54, 0.5)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 2px 10px rgba(255, 90, 54, 0.35)";
                   }}
                 >
                   <BookOpen size={13} /> Book Gallery Layout
@@ -682,7 +700,7 @@ const GalleryDetailContent = ({
             </div>
 
             {/* Gallery Description */}
-            {gallery.description && viewMode !== "book" && (
+            {gallery.description && (
               <div 
                 className="gallery-description-content"
                 style={{
@@ -697,12 +715,7 @@ const GalleryDetailContent = ({
 
             {/* The Photos Display: NO IMAGE IS CUT (Full Complete Dimensions) */}
             {photos.length > 0 ? (
-              viewMode === "book" ? (
-                <BookGalleryLayout
-                  gallery={gallery}
-                  onSwitchToStandard={() => setViewMode("masonry")}
-                />
-              ) : viewMode === "masonry" ? (
+              viewMode === "masonry" ? (
                 /* Multi-column Masonry: Natural height of every photo is completely respected */
                 <div
                   style={{
@@ -1033,8 +1046,8 @@ const GalleryDetailContent = ({
             )}
           </div>
 
-          {/* Single Gallery Sidebar (When Enabled and not in full Book Mode) */}
-          {isSidebarEnabled && viewMode !== "book" && (
+          {/* Single Gallery Sidebar (When Enabled) */}
+          {isSidebarEnabled && (
             <aside
               className="gallery-single-sidebar"
               style={{
@@ -1333,6 +1346,14 @@ const GalleryDetailContent = ({
 
       {/* 5. Live Color Customizer Floating Widget */}
       <GalleryThemePalette />
+
+      {/* 6. Interactive 3D Photobook Fullscreen Modal Popup */}
+      {bookModalOpen && (
+        <BookGalleryLayout
+          gallery={gallery}
+          onClose={() => setBookModalOpen(false)}
+        />
+      )}
 
       <style>{`
 
