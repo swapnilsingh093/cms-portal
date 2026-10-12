@@ -479,7 +479,7 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 18px;
+  width: 14px;
   z-index: 20;
   pointer-events: none;
   display: flex;
@@ -493,20 +493,13 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 2px;
-  background: #261e16;
-  box-shadow:
-    0 0 10px 4px rgba(0, 0, 0, 0.4),
-    0 0 2px 1px rgba(0, 0, 0, 0.6);
+  width: 1px;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 .spine-highlight-stitch {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(50% + 2px);
-  width: 1px;
-  background: rgba(255, 255, 255, 0.25);
+  display: none;
 }
 
 /* Spiral Wire Ring Binding */
@@ -860,58 +853,90 @@
   transition: all 0.2s ease;
 }
 
-.cover-open-btn:hover {
-  background: #c2410c;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(234, 88, 12, 0.45);
+/* Cover Hero Image - Aspect Preserved */
+.cover-ambient-blur {
+  position: absolute;
+  inset: -10px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) brightness(0.65);
+  opacity: 0.5;
+  transform: scale(1.08);
+  pointer-events: none;
+}
+
+.cover-hero-img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 /* ==========================================================================
-   LAYOUT STYLE 1: 2 PAGES PE 1 FULL IMAGE (CROSS-SPREAD PANORAMA)
+   LAYOUT STYLE 1: SEAMLESS 2-PAGE SPREAD (CROSS-PAGE PANORAMA, NO CENTER LINE)
    ========================================================================== */
-.panorama-half-page {
+.artisan-book-pages.is-panorama-spread {
+  padding: 0;
+  background: #06050a;
+}
+
+.artisan-book-pages.is-panorama-spread .artisan-center-spine,
+.artisan-book-pages.is-panorama-spread .page-gutter-shadow,
+.artisan-book-pages.is-panorama-spread .book-spiral-binding {
+  display: none !important;
+}
+
+.artisan-spread-panorama-full {
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
   cursor: zoom-in;
-  background: #000000;
+  background: #06050a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.pano-spread-img {
+.pano-ambient-bg {
   position: absolute;
-  top: 0;
-  width: 200%;
+  inset: -20px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(45px) brightness(0.55);
+  opacity: 0.55;
+  transform: scale(1.1);
+  pointer-events: none;
+}
+
+.pano-full-spread-img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* Full photo, 100% face and horizons preserved */
   display: block;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.pano-spread-left {
-  left: 0;
-}
-
-.pano-spread-right {
-  left: -100%;
-}
-
-.panorama-half-page:hover .pano-spread-img {
+.artisan-spread-panorama-full:hover .pano-full-spread-img {
   transform: scale(1.02);
 }
 
 .pano-badge-tag {
   position: absolute;
   top: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.65);
+  left: 24px;
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #fdba74;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.14em;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
   z-index: 10;
   pointer-events: none;
@@ -921,21 +946,21 @@
   position: absolute;
   bottom: 24px;
   right: 24px;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #ffffff;
   font-family: 'Newsreader', Georgia, serif;
   font-size: 14px;
   font-style: italic;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 6px;
   z-index: 10;
   pointer-events: none;
 }
 
 /* ==========================================================================
-   LAYOUT STYLE 2: EK PAGE PE 1 FULL IMAGE (FULL WIDTH & HEIGHT EDGE-TO-EDGE)
+   LAYOUT STYLE 2: EK PAGE PE 1 FULL IMAGE (UNCROPPED, FACES NEVER CUT)
    ========================================================================== */
 .full-bleed-page {
   position: relative;
@@ -943,13 +968,29 @@
   height: 100%;
   overflow: hidden;
   cursor: zoom-in;
-  background: #000000;
+  background: #08070d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-ambient-blur-bg {
+  position: absolute;
+  inset: -15px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(35px) brightness(0.65);
+  opacity: 0.5;
+  transform: scale(1.08);
+  pointer-events: none;
 }
 
 .full-page-hero-img {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* Full face, head, and body 100% visible, never cut */
   display: block;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -961,8 +1002,9 @@
 .full-page-gradient-tint {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 40%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 35%);
   pointer-events: none;
+  z-index: 3;
 }
 
 .full-page-caption-pill {
@@ -992,7 +1034,7 @@
 }
 
 /* ==========================================================================
-   LAYOUT STYLE 3: EK PAGE PE 2 FULL IMAGES (FULL WIDTH & HEIGHT SPLIT)
+   LAYOUT STYLE 3: EK PAGE PE 2 FULL IMAGES (UNCROPPED, FACES NEVER CUT)
    ========================================================================== */
 .dual-full-page {
   position: relative;
@@ -1001,7 +1043,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #000000;
+  background: #08070d;
 }
 
 .dual-half-block {
@@ -1011,12 +1053,28 @@
   position: relative;
   overflow: hidden;
   cursor: zoom-in;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dual-ambient-bg {
+  position: absolute;
+  inset: -10px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(30px) brightness(0.6);
+  opacity: 0.45;
+  transform: scale(1.08);
+  pointer-events: none;
 }
 
 .dual-half-img {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* Full face and composition 100% visible, never cut */
   display: block;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1026,10 +1084,10 @@
 }
 
 .dual-split-seam {
-  height: 3px;
-  background: #07060b;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
   z-index: 5;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
 }
 
 .dual-gradient-tint {
@@ -1037,6 +1095,7 @@
   inset: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, transparent 45%);
   pointer-events: none;
+  z-index: 3;
 }
 
 .dual-caption-overlay {
