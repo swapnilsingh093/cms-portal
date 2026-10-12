@@ -24,8 +24,10 @@ import {
   Check,
   LayoutGrid,
   Columns,
-  Tag
+  Tag,
+  BookOpen
 } from "lucide-react";
+import BookGalleryLayout from "../../components/galleries/BookGalleryLayout";
 
 const GalleryDetailContent = ({
   slug: propSlug,
@@ -492,7 +494,6 @@ const GalleryDetailContent = ({
                     background: 'var(--primary-subtle, #10b981)',
             border: '1px solid var(--g-accent, #10b981)',
                     color: 'var(--g-accent, #ffffff)',
-                    
                     fontSize: "0.85rem",
                     fontWeight: 700,
                     cursor: "pointer",
@@ -501,6 +502,31 @@ const GalleryDetailContent = ({
                 >
                   <Play size={14} fill="currentColor" />
                   <span>Start Slideshow</span>
+                </button>
+              )}
+
+              {photos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setViewMode(viewMode === "book" ? "masonry" : "book")}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "7px",
+                    padding: "8px 18px",
+                    borderRadius: "999px",
+                    background: viewMode === "book" ? "linear-gradient(135deg, #3b82f6, #2563eb)" : "linear-gradient(135deg, #FF5A36, #FF8552)",
+                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    color: "#ffffff",
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: viewMode === "book" ? "0 4px 14px rgba(59, 130, 246, 0.4)" : "0 4px 14px rgba(255, 90, 54, 0.4)",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease"
+                  }}
+                >
+                  <BookOpen size={15} />
+                  <span>{viewMode === "book" ? "Standard Layout" : "Book Gallery Layout"}</span>
                 </button>
               )}
 
@@ -556,7 +582,7 @@ const GalleryDetailContent = ({
           className={`gallery-detail-layout ${isSidebarEnabled ? "with-sidebar" : "without-sidebar"}`}
           style={{
             display: "grid",
-            gridTemplateColumns: isSidebarEnabled ? "minmax(0, 1fr) 330px" : "1fr",
+            gridTemplateColumns: (isSidebarEnabled && viewMode !== "book") ? "minmax(0, 1fr) 330px" : "1fr",
             gap: "40px",
             alignItems: "start",
           }}
@@ -572,18 +598,20 @@ const GalleryDetailContent = ({
                 marginBottom: "28px",
                 paddingBottom: "14px",
                 borderBottom: "1px solid var(--g-border, rgba(255, 255, 255, 0.08))",
+                flexWrap: "wrap",
+                gap: "12px",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--g-text, var(--text-primary, #ffffff))" }}>
-                  High-Definition Photo Stream
+                  {viewMode === "book" ? "Interactive 3D Photobook Album" : "High-Definition Photo Stream"}
                 </span>
                 <span style={{ fontSize: "0.8rem", color: "var(--g-text-muted, var(--text-secondary, #94a3b8))" }}>
-                  (Click any photo to open interactive popup lightbox)
+                  {viewMode === "book" ? "(Click pages or arrows to flip through book)" : "(Click any photo to open interactive popup lightbox)"}
                 </span>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                 <button
                   type="button"
                   onClick={() => setViewMode("masonry")}
@@ -627,11 +655,34 @@ const GalleryDetailContent = ({
                 >
                   <LayoutGrid size={13} /> Grid
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode("book")}
+                  title="3D Interactive Photobook Album"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    border: "none",
+                    background: viewMode === "book" ? "linear-gradient(135deg, #FF5A36, #FF8552)" : "rgba(255,255,255,0.06)",
+                    border: viewMode === "book" ? "1px solid #FF5A36" : "1px solid transparent",
+                    color: viewMode === "book" ? "#111" : "var(--g-text-muted, var(--text-secondary, #94a3b8))",
+                    cursor: "pointer",
+                    boxShadow: viewMode === "book" ? "0 4px 14px rgba(255, 90, 54, 0.4)" : "none",
+                  }}
+                >
+                  <BookOpen size={13} /> Book Gallery Layout
+                </button>
               </div>
             </div>
 
             {/* Gallery Description */}
-            {gallery.description && (
+            {gallery.description && viewMode !== "book" && (
               <div 
                 className="gallery-description-content"
                 style={{
@@ -646,7 +697,12 @@ const GalleryDetailContent = ({
 
             {/* The Photos Display: NO IMAGE IS CUT (Full Complete Dimensions) */}
             {photos.length > 0 ? (
-              viewMode === "masonry" ? (
+              viewMode === "book" ? (
+                <BookGalleryLayout
+                  gallery={gallery}
+                  onSwitchToStandard={() => setViewMode("masonry")}
+                />
+              ) : viewMode === "masonry" ? (
                 /* Multi-column Masonry: Natural height of every photo is completely respected */
                 <div
                   style={{
@@ -977,8 +1033,8 @@ const GalleryDetailContent = ({
             )}
           </div>
 
-          {/* Single Gallery Sidebar (When Enabled) */}
-          {isSidebarEnabled && (
+          {/* Single Gallery Sidebar (When Enabled and not in full Book Mode) */}
+          {isSidebarEnabled && viewMode !== "book" && (
             <aside
               className="gallery-single-sidebar"
               style={{

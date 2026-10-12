@@ -1,0 +1,1398 @@
+/* ==========================================================================
+   LUMEN PHOTOBOOK - REALISTIC 3D INTERACTIVE BOOK GALLERY FOR CMS PORTAL
+   ========================================================================== */
+
+.book-gallery-root {
+  --bg-dark: #0D0B14;
+  --bg-gradient: radial-gradient(1200px 700px at 50% 10%, #2A2140 0%, #111019 60%, #0A0910 100%);
+  --accent: #FF5A36;
+  --accent-gold: #E2A755;
+  --paper: #FAF6F0;
+  --paper-texture: #F5EFE6;
+  --paper-text: #24201D;
+  --paper-muted: #7A726A;
+  --spine-shadow: rgba(28, 18, 10, 0.35);
+  --cover-bg: #171424;
+  --book-width: 960px;
+  --book-height: 640px;
+  --page-width: 480px;
+  --page-height: 640px;
+  --transition-speed: 1.15s;
+  --transition-ease: cubic-bezier(0.645, 0.045, 0.355, 1);
+
+  font-family: 'Figtree', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-dark);
+  background-image: var(--bg-gradient);
+  color: #FFFFFF;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  border-radius: 16px;
+  margin: 10px 0 40px;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.book-gallery-root.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  margin: 0;
+  border-radius: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* ==========================================================================
+   HEADER & NAVIGATION
+   ========================================================================== */
+.book-gallery-header {
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+
+.book-gallery-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.book-gallery-brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent) 0%, #FF8552 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  box-shadow: 0 4px 16px rgba(255, 90, 54, 0.35);
+}
+
+.book-gallery-brand-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.1;
+  text-align: left;
+}
+
+.book-gallery-brand-subtitle {
+  font-size: 12px;
+  color: #A3A8BA;
+  font-weight: 500;
+  display: block;
+}
+
+.book-gallery-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.book-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #E3E6F0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.book-header-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.book-header-btn.active {
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
+}
+
+.book-header-btn.btn-return-standard {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+.book-header-btn.btn-return-standard:hover {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   MAIN HERO & INTRO
+   ========================================================================== */
+.book-gallery-intro {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px 20px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.book-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 99px;
+  background: rgba(255, 90, 54, 0.12);
+  border: 1px solid rgba(255, 90, 54, 0.35);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.book-tag-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bookPulse 2s infinite ease-in-out;
+}
+
+@keyframes bookPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.book-main-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.book-intro-desc {
+  color: #A6ACBE;
+  font-size: 15px;
+  max-width: 580px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ==========================================================================
+   3D BOOK STAGE & ENVIRONMENT
+   ========================================================================== */
+.book-stage {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px 24px;
+  perspective: 2400px;
+  overflow: visible;
+}
+
+.book-container {
+  position: relative;
+  width: var(--book-width);
+  height: var(--book-height);
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease;
+}
+
+/* Hardcover base & stacked paper edges simulation */
+.book-shadow {
+  position: absolute;
+  inset: -15px -25px -35px -25px;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 75%);
+  pointer-events: none;
+  z-index: -2;
+  filter: blur(14px);
+}
+
+.book-cover-base {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: -8px;
+  right: -8px;
+  border-radius: 12px;
+  background: #110E1D;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), 0 10px 25px rgba(0, 0, 0, 0.45);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.spine-ridge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 24px;
+  transform: translateX(-50%);
+  background: linear-gradient(to right, 
+    rgba(0,0,0,0.5) 0%, 
+    rgba(255,255,255,0.05) 50%, 
+    rgba(0,0,0,0.5) 100%
+  );
+  border-radius: 4px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.stacked-pages-left, .stacked-pages-right {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 14px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #ECE4D8 0px,
+    #D8CEBE 1px,
+    #ECE4D8 2px
+  );
+  z-index: -1;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
+}
+.stacked-pages-left {
+  left: -12px;
+  border-radius: 3px 0 0 3px;
+  border-left: 2px solid #BCB09E;
+}
+.stacked-pages-right {
+  right: -12px;
+  border-radius: 0 3px 3px 0;
+  border-right: 2px solid #BCB09E;
+}
+
+/* ==========================================================================
+   PAGES & 3D LEAF SYSTEM
+   ========================================================================== */
+.book-leaf {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: var(--page-width);
+  height: var(--page-height);
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform var(--transition-speed) var(--transition-ease);
+  will-change: transform;
+}
+
+.book-leaf.flipped {
+  transform: rotateY(-180deg);
+}
+
+/* Page faces: Front (Right side) and Back (Left side when flipped) */
+.page-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-sizing: border-box;
+  background-color: var(--paper);
+  color: var(--paper-text);
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.04);
+}
+
+.page-face.page-front {
+  border-radius: 0 8px 8px 0;
+  background-image: 
+    linear-gradient(to right, rgba(40, 25, 12, 0.28) 0%, rgba(40, 25, 12, 0.08) 5%, rgba(40, 25, 12, 0) 14%),
+    radial-gradient(circle at 100% 50%, rgba(0,0,0,0.03) 0%, transparent 60%);
+}
+
+.page-face.page-back {
+  border-radius: 8px 0 0 8px;
+  transform: rotateY(180deg);
+  background-image: 
+    linear-gradient(to left, rgba(40, 25, 12, 0.28) 0%, rgba(40, 25, 12, 0.08) 5%, rgba(40, 25, 12, 0) 14%),
+    radial-gradient(circle at 0% 50%, rgba(0,0,0,0.03) 0%, transparent 60%);
+}
+
+.page-face::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.page-face.page-front::after {
+  left: 0;
+  background: linear-gradient(to right, rgba(15, 10, 5, 0.3) 0%, rgba(15, 10, 5, 0.08) 45%, transparent 100%);
+}
+
+.page-face.page-back::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(15, 10, 5, 0.3) 0%, rgba(15, 10, 5, 0.08) 45%, transparent 100%);
+}
+
+.cover-front::after,
+.cover-back::after,
+.toc-page::after {
+  display: none !important;
+}
+
+/* Page corner turn hint & click zones */
+.flip-hotspot-left, .flip-hotspot-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 70px;
+  z-index: 40;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.flip-hotspot-left {
+  left: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);
+}
+.flip-hotspot-right {
+  right: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.08), transparent);
+}
+.book-container:hover .flip-hotspot-left,
+.book-container:hover .flip-hotspot-right {
+  opacity: 1;
+}
+
+.corner-curl-hint {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  transform: scale(0.85);
+  transition: transform 0.2s ease, background 0.2s ease;
+  font-size: 14px;
+}
+.flip-hotspot-left:hover .corner-curl-hint,
+.flip-hotspot-right:hover .corner-curl-hint {
+  transform: scale(1.05);
+  background: var(--accent);
+  color: #111;
+}
+
+.page-number {
+  position: absolute;
+  bottom: 14px;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.8) !important;
+  font-style: italic;
+  pointer-events: none;
+  z-index: 25;
+}
+.page-face.page-front .page-number {
+  right: 20px;
+}
+.page-face.page-back .page-number {
+  left: 20px;
+}
+.page-face.toc-page .page-number {
+  color: #6B6258 !important;
+  text-shadow: none !important;
+}
+
+/* ==========================================================================
+   BOOK COVERS (FRONT & BACK HARDCOVER)
+   ========================================================================== */
+.cover-front {
+  background: radial-gradient(circle 280px at 75% 20%, #E85D36 0%, #B82848 50%, #1D1432 100%), #140E24 !important;
+  color: #FFFFFF !important;
+  display: flex;
+  flex-direction: column;
+  padding: 44px 38px;
+  position: relative;
+  border-radius: 0 10px 10px 0 !important;
+  border-left: 3px solid rgba(0,0,0,0.5);
+  box-sizing: border-box;
+}
+
+.cover-emboss-border {
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(240, 190, 110, 0.45);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.cover-emboss-border::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(240, 190, 110, 0.2);
+  border-radius: 4px;
+}
+
+.cover-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #111;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  width: fit-content;
+  box-shadow: 0 4px 14px rgba(255, 90, 54, 0.4);
+}
+
+.cover-headline {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-top: 18px;
+  color: #FFFFFF;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.cover-sub {
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: #E8E2F4;
+  margin-top: 12px;
+  line-height: 1.4;
+}
+
+.cover-bottom {
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cover-open-btn {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.cover-open-btn:hover {
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
+  transform: scale(1.04);
+}
+
+.cover-back {
+  background: radial-gradient(circle 280px at 20% 80%, rgba(229,86,123,0.4) 0%, transparent 80%), #161026 !important;
+  color: #FFFFFF !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 44px;
+  box-sizing: border-box;
+}
+
+.cover-back-emblem {
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-gold) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 20px rgba(255, 90, 54, 0.4);
+}
+
+/* ==========================================================================
+   DYNAMIC IMAGE LAYOUT SYSTEM (FULL-BLEED EDGE-TO-EDGE)
+   ========================================================================== */
+.page-content {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.photo-frame {
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: #120F1D;
+  cursor: pointer;
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  transition: transform 0.75s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+}
+
+.photo-frame:hover {
+  z-index: 20 !important;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.photo-frame:hover img {
+  transform: scale(1.035);
+}
+
+/* LAYOUT 1: SINGLE FULL-BLEED HERO */
+.layout-single-hero,
+.layout-single-inset {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.layout-single-hero .photo-frame,
+.layout-single-inset .photo-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 100% !important;
+  flex: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+.layout-single-hero .photo-frame img,
+.layout-single-inset .photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* LAYOUT 2: DUAL EQUAL (50/50 VERTICAL STACK) */
+.layout-dual-equal,
+.layout-scrapbook,
+.layout-zigzag {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 3px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.layout-dual-equal .photo-frame,
+.layout-scrapbook .photo-frame,
+.layout-zigzag .photo-frame {
+  position: relative !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: calc(50% - 1.5px) !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  flex: 1 1 calc(50% - 1.5px) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+.layout-dual-equal .photo-frame img,
+.layout-scrapbook .photo-frame img,
+.layout-zigzag .photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* LAYOUT 2B: ASYMMETRIC DUO (TOP 62%, BOTTOM 38%) */
+.layout-asymmetric-duo {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 3px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.layout-asymmetric-duo .photo-frame:first-child {
+  position: relative !important;
+  width: 100% !important;
+  height: calc(62% - 1.5px) !important;
+  flex: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+.layout-asymmetric-duo .photo-frame:last-child {
+  position: relative !important;
+  width: 100% !important;
+  height: calc(38% - 1.5px) !important;
+  flex: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+.layout-asymmetric-duo .photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* LAYOUT 2C: ASYMMETRIC DUO INVERTED (TOP 38%, BOTTOM 62%) */
+.layout-asymmetric-duo-inverted {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 3px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.layout-asymmetric-duo-inverted .photo-frame:first-child {
+  position: relative !important;
+  width: 100% !important;
+  height: calc(38% - 1.5px) !important;
+  flex: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+.layout-asymmetric-duo-inverted .photo-frame:last-child {
+  position: relative !important;
+  width: 100% !important;
+  height: calc(62% - 1.5px) !important;
+  flex: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+.layout-asymmetric-duo-inverted .photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* LAYOUT 5: FULL-SPREAD DOUBLE-PAGE PANORAMA */
+.page-spread-half {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0E0C16;
+  cursor: pointer;
+}
+
+.page-spread-left img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.page-spread-right img {
+  position: absolute;
+  left: -100%;
+  top: 0;
+  width: 200%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* LAYOUT 6: TRIO COMPOSITION (LEAD + 2 STACKED) */
+.layout-trio {
+  height: 100%;
+  display: flex;
+  gap: 6px;
+  padding: 0;
+}
+
+.layout-trio .lead-col {
+  flex: 1.25;
+  height: 100%;
+}
+
+.layout-trio .stack-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+}
+
+.layout-trio .stack-col .photo-frame {
+  flex: 1;
+}
+
+/* LAYOUT 7: POLAROID DUO */
+.layout-polaroids {
+  height: 100%;
+  position: relative;
+  background: #F2EDE4;
+}
+
+.polaroid-card {
+  position: absolute;
+  background: #FFFFFF;
+  padding: 10px 10px 24px 10px;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.polaroid-card .polaroid-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #eee;
+}
+
+.polaroid-card .polaroid-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.polaroid-caption {
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: #333;
+  text-align: center;
+  margin-top: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.polaroid-1 {
+  top: 20px;
+  left: 20px;
+  width: 74%;
+  transform: rotate(-3deg);
+}
+
+.polaroid-2 {
+  bottom: 30px;
+  right: 20px;
+  width: 74%;
+  transform: rotate(2.8deg);
+  z-index: 2;
+}
+
+.polaroid-card:hover {
+  transform: rotate(0deg) scale(1.04);
+  z-index: 30;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
+}
+
+/* LAYOUT 8: QUAD PHOTO MOSAIC */
+.layout-quad {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+}
+
+/* TABLE OF CONTENTS */
+.page-toc {
+  padding: 38px 32px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.toc-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.toc-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.15;
+  color: #14110F;
+  margin: 6px 0 10px;
+}
+
+.toc-intro {
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #4A433B;
+  margin-bottom: 16px;
+}
+
+.toc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 420px;
+  padding-right: 4px;
+}
+
+.toc-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px dotted #C7BCAC;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.toc-item:hover {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+
+.toc-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  width: 20px;
+}
+
+.toc-label {
+  flex: 1;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 14px;
+  color: #26221E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toc-page {
+  font-size: 12px;
+  color: var(--paper-muted);
+}
+
+/* ==========================================================================
+   NAVIGATION BAR & CONTROLS
+   ========================================================================== */
+.book-controls-bar {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 14px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.spread-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #E3E6F0;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.progress-track {
+  width: 100%;
+  max-width: 380px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-gold) 100%);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.nav-buttons-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.book-nav-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.book-nav-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(255, 90, 54, 0.35);
+}
+
+.book-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.dots-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  max-width: 320px;
+  overflow-x: auto;
+}
+
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #3B3F50;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: width 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), background 0.3s ease;
+  flex-shrink: 0;
+}
+
+.nav-dot.active {
+  width: 24px;
+  background: var(--accent);
+}
+
+.quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pill-action-btn {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: #C8CDDE;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.pill-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFF;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================================================
+   LIGHTBOX MODAL
+   ========================================================================== */
+.book-lightbox-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 6, 14, 0.92);
+  backdrop-filter: blur(16px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.book-lightbox-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.book-lightbox-content {
+  position: relative;
+  max-width: 1050px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transform: scale(0.95);
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.book-lightbox-modal.active .book-lightbox-content {
+  transform: scale(1);
+}
+
+.book-lightbox-image-wrap {
+  position: relative;
+  width: 100%;
+  max-height: 74vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+}
+
+.book-lightbox-image-wrap img {
+  max-width: 100%;
+  max-height: 74vh;
+  object-fit: contain;
+  display: block;
+}
+
+.book-lightbox-caption-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.book-lightbox-info h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFF;
+  margin: 0;
+}
+
+.book-lightbox-info p {
+  font-size: 13px;
+  color: #A3A8BA;
+  margin-top: 3px;
+  margin-bottom: 0;
+}
+
+.book-lightbox-close-btn {
+  position: absolute;
+  top: -46px;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.book-lightbox-close-btn:hover {
+  background: var(--accent);
+  color: #111;
+  transform: scale(1.1);
+}
+
+/* ==========================================================================
+   DRAWER / FILMSTRIP MODAL
+   ========================================================================== */
+.book-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+.book-drawer-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.book-spreads-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #151322;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 22px 28px 28px;
+  z-index: 10500;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+  box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.6);
+}
+.book-spreads-drawer.active {
+  transform: translateY(0);
+}
+
+.book-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.book-drawer-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #FFF;
+}
+
+.book-drawer-grid {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.book-drawer-card {
+  flex: 0 0 150px;
+  background: #201D30;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+
+.book-drawer-card:hover, .book-drawer-card.active {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  background: #2C2842;
+}
+
+.book-drawer-card-preview {
+  width: 100%;
+  height: 85px;
+  border-radius: 4px;
+  background: #111;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.book-drawer-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-drawer-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #FFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-drawer-card-sub {
+  font-size: 11px;
+  color: #8C92A4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (TABLETS & MOBILE)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .book-gallery-root {
+    --book-width: 760px;
+    --book-height: 510px;
+    --page-width: 380px;
+    --page-height: 510px;
+  }
+  .book-main-title {
+    font-size: 28px;
+  }
+  .cover-headline {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 800px) {
+  .book-gallery-root {
+    --book-width: 620px;
+    --book-height: 420px;
+    --page-width: 310px;
+    --page-height: 420px;
+  }
+  .cover-headline {
+    font-size: 24px;
+  }
+  .toc-title {
+    font-size: 20px;
+  }
+  .toc-list {
+    gap: 6px;
+  }
+  .toc-item {
+    font-size: 13px;
+  }
+  .book-nav-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .book-stage {
+    padding: 10px 4px 16px;
+    perspective: 1600px;
+  }
+  .book-container {
+    transform: scale(0.56);
+    transform-origin: center top;
+    margin-bottom: -170px;
+  }
+  .book-main-title {
+    font-size: 22px;
+  }
+  .book-intro-desc {
+    font-size: 13px;
+  }
+  .book-header-btn span {
+    display: none;
+  }
+}
