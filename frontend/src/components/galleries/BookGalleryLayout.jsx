@@ -29,82 +29,27 @@ const getMediaUrl = (url) => {
 };
 
 /**
- * Photorealistic Spiral Coil Wire Binding
- */
-function SpiralCoilBinding({ height = 620 }) {
-  const pitch = 22;
-  const ringCount = Math.max(12, Math.floor((height - 30) / pitch));
-  const rings = Array.from({ length: ringCount });
-
-  return (
-    <div className="book-spiral-binding" aria-hidden="true">
-      <div className="book-spiral-shadow" />
-      <svg
-        width="34"
-        height={height}
-        viewBox={`0 0 34 ${height}`}
-        className="book-spiral-svg"
-      >
-        <defs>
-          <linearGradient id="spiralGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#94a3b8" />
-            <stop offset="25%" stopColor="#1e293b" />
-            <stop offset="50%" stopColor="#e2e8f0" />
-            <stop offset="75%" stopColor="#0f172a" />
-            <stop offset="100%" stopColor="#020617" />
-          </linearGradient>
-          <radialGradient id="holeGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#020617" />
-            <stop offset="80%" stopColor="#0f172a" />
-            <stop offset="100%" stopColor="#334155" />
-          </radialGradient>
-        </defs>
-
-        {rings.map((_, idx) => {
-          const y = 18 + idx * pitch;
-          return (
-            <g key={idx}>
-              <rect x="5" y={y + 1} width="5" height="9" rx="2.5" fill="url(#holeGrad)" />
-              <rect x="24" y={y + 1} width="5" height="9" rx="2.5" fill="url(#holeGrad)" />
-              <path
-                d={`M 8 ${y + 8} C 12 ${y + 12}, 22 ${y + 12}, 26 ${y + 8}`}
-                fill="none"
-                stroke="#0f172a"
-                strokeWidth="2.5"
-                opacity="0.8"
-              />
-              <path
-                d={`M 7 ${y + 5} C 11 ${y - 4}, 23 ${y - 4}, 27 ${y + 5}`}
-                fill="none"
-                stroke="url(#spiralGrad)"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-              />
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-/**
- * Modern High-Performance Photobook Modal with 3D Page Turning Engine
+ * Photorealistic Interactive 3D Photobook Modal
+ * Features:
+ * - Real 3D Book Leaf Engine (leaves physically flip over with 180° rotation)
+ * - 100% Uncropped faces and subjects (aspect-ratio preserved + ambient blur backfill)
+ * - Seamless 2-Page Layflat Panorama across leaves with hidden spine crease
+ * - Balanced spreads (1 Full + 2 Dual, 2 Dual + 1 Full, 1 Full + 1 Full, or 2-Page Panorama)
+ * - Zero image desync: each page face has static, pre-rendered photos
+ * - Smooth, calm, organic page turns without jerks ("jhatke")
  */
 const BookGalleryLayout = ({ gallery, onClose }) => {
-  const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
-  const [bindingType, setBindingType] = useState("hardcover"); // "hardcover" | "spiral"
+  const [currentSpread, setCurrentSpread] = useState(0); // Starts at 0, opens smoothly to 1
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoPlay, setAutoPlay] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [filmstripOpen, setFilmstripOpen] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
-  const [isFlipping, setIsFlipping] = useState(null); // 'next' | 'prev' | null
-  const [isBookOpening, setIsBookOpening] = useState(true);
 
   const modalContainerRef = useRef(null);
   const audioContextRef = useRef(null);
   const autoPlayTimerRef = useRef(null);
+  const isFlippingRef = useRef(false);
 
   // Photos array
   const photos = useMemo(() => {
@@ -133,7 +78,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       const ctx = audioContextRef.current;
       if (ctx.state === "suspended") ctx.resume();
 
-      const duration = 0.22;
+      const duration = 0.18;
       const bufferSize = ctx.sampleRate * duration;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -142,8 +87,8 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
         lastOut = (lastOut + 0.02 * white) / 1.02;
-        const decay = Math.pow(1 - i / bufferSize, 2.5);
-        data[i] = lastOut * decay * 1.6;
+        const decay = Math.pow(1 - i / bufferSize, 2.2);
+        data[i] = lastOut * decay * 1.5;
       }
 
       const noise = ctx.createBufferSource();
@@ -151,8 +96,8 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
 
       const filter = ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(1400, ctx.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + duration);
+      filter.frequency.setValueAtTime(1200, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + duration);
 
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.35, ctx.currentTime);
@@ -167,232 +112,257 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
     }
   }, [soundEnabled]);
 
-  // Initial Book Opening Animation
-  useEffect(() => {
-    playPageTurnSound();
-    const timer = setTimeout(() => {
-      setIsBookOpening(false);
-    }, 850);
-    return () => clearTimeout(timer);
-  }, [playPageTurnSound]);
-
   /**
-   * Curate gallery photos into clean, uncropped spreads:
-   * 1. 2-Page Panorama (Seamless Layflat, no center seam)
-   * 2. Left 1 Full + Right 2 Dual
-   * 3. Left 2 Dual + Right 1 Full
-   * 4. Left 1 Full + Right 1 Full
+   * Curate gallery photos into clean spreads (Spread 0 to Spread M)
    */
   const spreads = useMemo(() => {
     const list = [];
     const totalPhotos = photos.length;
 
-    // Spread 0: Hardcover Cover & Title Plate
+    // Spread 0: Hardcover Cover (Right side)
     list.push({
       id: "cover",
       type: "cover_spread",
       badge: "Cover",
-      title: "Hardcover Cover & Title Plate",
-      leftPage: {
-        type: "inside_front_cover",
-        galleryTitle: gallery?.title || "Photo Gallery",
-        category: gallery?.category?.name || "Editorial Collection",
-        date: gallery?.createdAt
-          ? new Date(gallery.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-          : "Recent",
-        photographer: gallery?.author?.name || "Curator's Pick",
-        photoCount: totalPhotos,
-        description: gallery?.description || "An exclusive photobook showcase."
-      },
-      rightPage: {
-        type: "cover_showcase",
+      title: "Hardcover Cover",
+      frontCover: {
+        type: "cover_front",
         coverImage: getMediaUrl(gallery?.coverImage || gallery?.banner || photos[0]?.url),
         galleryTitle: gallery?.title || "Photo Gallery",
-        subtitle: "Fine Art Photography Collection"
+        subtitle: gallery?.category?.name ? `${gallery.category.name} Collection` : "Fine Art Photography Collection",
+        photoCount: totalPhotos,
+        curator: gallery?.author?.name || "Featured Artist",
+        year: gallery?.createdAt ? new Date(gallery.createdAt).getFullYear() : 2026
       }
     });
 
-    let photoIdx = 0;
-    let spreadCount = 1;
-    let pageNum = 1;
+    // Spread 1 Left Page: Inside Cover Plate
+    const insideCoverPage = {
+      type: "inside_front_cover",
+      galleryTitle: gallery?.title || "Photo Gallery",
+      category: gallery?.category?.name || "Editorial Collection",
+      date: gallery?.createdAt
+        ? new Date(gallery.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : "Recent",
+      photographer: gallery?.author?.name || "Curator's Pick",
+      photoCount: totalPhotos,
+      description: gallery?.description || "An exclusive photobook showcase."
+    };
 
-    // Controlled rhythm of spreads:
+    let photoIdx = 0;
+    let pageNum = 1;
+    let spreadCount = 1;
+
+    // Rhythm of layouts:
+    // - 2-page panorama (1 photo across 2 pages)
+    // - 1 full page (1 photo)
+    // - 1 page with 2 full images (dual stack)
+    // - NEVER 2 on left AND 2 on right simultaneously!
     const patternCycle = [
-      "panorama",      // 2-page seamless panorama
       "single_dual",   // Left = 1 Full, Right = 2 Dual
       "single_single", // Left = 1 Full, Right = 1 Full
+      "panorama",      // 2-Page Panorama
       "dual_single",   // Left = 2 Dual, Right = 1 Full
       "single_single", // Left = 1 Full, Right = 1 Full
-      "panorama"       // 2-page seamless panorama
+      "panorama"       // 2-Page Panorama
     ];
-
     let patternIdx = 0;
 
+    // Spread 1:
+    // Left Page: insideCoverPage
+    // Right Page: Photo 0 (Single Hero Plate)
+    if (photoIdx < totalPhotos) {
+      const p = photos[photoIdx++];
+      list.push({
+        id: `spread_${spreadCount++}`,
+        type: "content_spread",
+        badge: "Hero Plate",
+        title: `Spread 1 • Hero Plate`,
+        leftPage: insideCoverPage,
+        rightPage: {
+          type: "full_single",
+          photo: p,
+          pageNumber: pageNum++
+        }
+      });
+    }
+
+    // Subsequent Spreads:
     while (photoIdx < totalPhotos) {
-      const currentPattern = patternCycle[patternIdx % patternCycle.length];
+      const pattern = patternCycle[patternIdx % patternCycle.length];
       patternIdx++;
       const remaining = totalPhotos - photoIdx;
 
       // 1. Two-page Panorama: 1 image spans both pages seamlessly (NO center line)
-      if (currentPattern === "panorama" && remaining >= 1) {
+      if (pattern === "panorama" && remaining >= 1) {
         const panoPhoto = photos[photoIdx++];
-        const startPage = pageNum;
-        const endPage = pageNum + 1;
-        pageNum += 2;
+        const startP = pageNum++;
+        const endP = pageNum++;
 
         list.push({
           id: `spread_${spreadCount++}`,
           type: "panorama_spread",
           badge: "2-Page Panorama",
-          title: `Pages ${startPage}–${endPage} • Panorama`,
-          photo: panoPhoto,
-          startPage,
-          endPage
+          title: `Pages ${startP} & ${endP} • Panorama`,
+          leftPage: {
+            type: "panorama_half",
+            photo: panoPhoto,
+            side: "left",
+            pageNumber: startP
+          },
+          rightPage: {
+            type: "panorama_half",
+            photo: panoPhoto,
+            side: "right",
+            pageNumber: endP
+          }
         });
         continue;
       }
 
       // 2. Left 1 Full Image, Right 2 Dual Images
-      if (currentPattern === "single_dual") {
+      if (pattern === "single_dual") {
         const leftPhoto = photos[photoIdx++];
         const rightPhoto1 = photoIdx < totalPhotos ? photos[photoIdx++] : null;
         const rightPhoto2 = photoIdx < totalPhotos ? photos[photoIdx++] : null;
 
-        const leftPNum = pageNum++;
-        const rightPNum = pageNum++;
+        const leftNum = pageNum++;
+        const rightNum = pageNum++;
 
         list.push({
           id: `spread_${spreadCount++}`,
           type: "content_spread",
           badge: "1 Full + 2 Dual",
-          title: `Pages ${leftPNum} & ${rightPNum}`,
+          title: `Pages ${leftNum} & ${rightNum}`,
           leftPage: {
             type: "full_single",
             photo: leftPhoto,
-            pageNumber: leftPNum
+            pageNumber: leftNum
           },
           rightPage: rightPhoto1
             ? rightPhoto2
               ? {
                   type: "full_dual",
                   photos: [rightPhoto1, rightPhoto2],
-                  pageNumber: rightPNum
+                  pageNumber: rightNum
                 }
               : {
                   type: "full_single",
                   photo: rightPhoto1,
-                  pageNumber: rightPNum
+                  pageNumber: rightNum
                 }
             : {
                 type: "minimal_plate",
-                pageNumber: rightPNum
+                pageNumber: rightNum
               }
         });
         continue;
       }
 
       // 3. Left 2 Dual Images, Right 1 Full Image
-      if (currentPattern === "dual_single") {
-        const leftPhoto1 = photos[photoIdx++];
-        const leftPhoto2 = photoIdx < totalPhotos ? photos[photoIdx++] : null;
-        const rightPhoto = photoIdx < totalPhotos ? photos[photoIdx++] : null;
+      if (pattern === "dual_single") {
+        const left1 = photos[photoIdx++];
+        const left2 = photoIdx < totalPhotos ? photos[photoIdx++] : null;
+        const rightP = photoIdx < totalPhotos ? photos[photoIdx++] : null;
 
-        const leftPNum = pageNum++;
-        const rightPNum = pageNum++;
+        const leftNum = pageNum++;
+        const rightNum = pageNum++;
 
         list.push({
           id: `spread_${spreadCount++}`,
           type: "content_spread",
           badge: "2 Dual + 1 Full",
-          title: `Pages ${leftPNum} & ${rightPNum}`,
-          leftPage: leftPhoto2
+          title: `Pages ${leftNum} & ${rightNum}`,
+          leftPage: left2
             ? {
                 type: "full_dual",
-                photos: [leftPhoto1, leftPhoto2],
-                pageNumber: leftPNum
+                photos: [left1, left2],
+                pageNumber: leftNum
               }
             : {
                 type: "full_single",
-                photo: leftPhoto1,
-                pageNumber: leftPNum
+                photo: left1,
+                pageNumber: leftNum
               },
-          rightPage: rightPhoto
+          rightPage: rightP
             ? {
                 type: "full_single",
-                photo: rightPhoto,
-                pageNumber: rightPNum
+                photo: rightP,
+                pageNumber: rightNum
               }
             : {
                 type: "minimal_plate",
-                pageNumber: rightPNum
+                pageNumber: rightNum
               }
         });
         continue;
       }
 
-      // 4. Left 1 Full Image, Right 1 Full Image (Classic Double Page)
-      if (currentPattern === "single_single") {
-        const leftPhoto = photos[photoIdx++];
-        const rightPhoto = photoIdx < totalPhotos ? photos[photoIdx++] : null;
+      // 4. Left 1 Full Image, Right 1 Full Image
+      if (pattern === "single_single") {
+        const leftP = photos[photoIdx++];
+        const rightP = photoIdx < totalPhotos ? photos[photoIdx++] : null;
 
-        const leftPNum = pageNum++;
-        const rightPNum = pageNum++;
+        const leftNum = pageNum++;
+        const rightNum = pageNum++;
 
         list.push({
           id: `spread_${spreadCount++}`,
           type: "content_spread",
           badge: "1 Full + 1 Full",
-          title: `Pages ${leftPNum} & ${rightPNum}`,
+          title: `Pages ${leftNum} & ${rightNum}`,
           leftPage: {
             type: "full_single",
-            photo: leftPhoto,
-            pageNumber: leftPNum
+            photo: leftP,
+            pageNumber: leftNum
           },
-          rightPage: rightPhoto
+          rightPage: rightP
             ? {
                 type: "full_single",
-                photo: rightPhoto,
-                pageNumber: rightPNum
+                photo: rightP,
+                pageNumber: rightNum
               }
             : {
                 type: "minimal_plate",
-                pageNumber: rightPNum
+                pageNumber: rightNum
               }
         });
         continue;
       }
 
-      // Fallback: 1 single page
+      // Default fallback
       if (photoIdx < totalPhotos) {
         const p = photos[photoIdx++];
-        const pNum = pageNum++;
+        const leftNum = pageNum++;
+        const rightNum = pageNum++;
         list.push({
           id: `spread_${spreadCount++}`,
           type: "content_spread",
           badge: "Full Image",
-          title: `Page ${pNum}`,
+          title: `Pages ${leftNum} & ${rightNum}`,
           leftPage: {
             type: "full_single",
             photo: p,
-            pageNumber: pNum
+            pageNumber: leftNum
           },
           rightPage: {
             type: "minimal_plate",
-            pageNumber: pageNum++
+            pageNumber: rightNum
           }
         });
       }
     }
 
-    // Final Spread: Epilogue & Back Cover
+    // Final Spread: Colophon Plate (Left) & Back Cover Plate (Right)
+    const endP = pageNum++;
     list.push({
       id: "epilogue",
       type: "epilogue_spread",
-      badge: "End Plate",
+      badge: "Colophon",
       title: "Colophon & Back Cover",
       leftPage: {
         type: "colophon",
-        pageNumber: pageNum++,
+        pageNumber: endP,
         galleryTitle: gallery?.title || "Photo Gallery",
         photoCount: totalPhotos,
         photographer: gallery?.author?.name || "Featured Artist",
@@ -408,80 +378,118 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
     return list;
   }, [gallery, photos]);
 
+  /**
+   * Map Spreads to 3D Physical Leaves
+   * Each leaf has a Front face (right side) and a Back face (left side when flipped).
+   */
+  const leaves = useMemo(() => {
+    const list = [];
+    const count = spreads.length;
+
+    for (let i = 0; i < count; i++) {
+      if (i === 0) {
+        list.push({
+          id: `leaf_0`,
+          front: spreads[0].frontCover,
+          back: spreads[1]?.leftPage || null,
+          isCover: true
+        });
+      } else if (i === count - 1) {
+        list.push({
+          id: `leaf_${i}`,
+          front: spreads[i].rightPage,
+          back: {
+            type: "outer_back_cover",
+            galleryTitle: gallery?.title || "Photo Gallery"
+          },
+          isLast: true
+        });
+      } else {
+        list.push({
+          id: `leaf_${i}`,
+          front: spreads[i].rightPage,
+          back: spreads[i + 1]?.leftPage || null
+        });
+      }
+    }
+    return list;
+  }, [spreads, gallery]);
+
+  const totalLeaves = leaves.length;
   const totalSpreads = spreads.length;
-  const currentSpread = spreads[currentSpreadIndex] || spreads[0];
+  const currentSpreadData = spreads[currentSpread] || spreads[0];
 
-  // 3D Flip Duration in ms
-  const FLIP_DURATION = 580;
+  // Smooth auto-open on initial mount so user sees book gracefully open to Spread 1
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (spreads.length > 1) {
+        playPageTurnSound();
+        setCurrentSpread(1);
+      }
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [spreads.length, playPageTurnSound]);
 
-  // Navigation handlers with physical 3D page turn
-  const goToNextSpread = useCallback(() => {
-    if (isFlipping) return;
-    if (currentSpreadIndex < totalSpreads - 1) {
+  // Turn page navigation handlers
+  const handleNext = useCallback(() => {
+    if (isFlippingRef.current) return;
+    if (currentSpread < totalSpreads - 1) {
+      isFlippingRef.current = true;
       playPageTurnSound();
-      setIsFlipping("next");
+      setCurrentSpread((prev) => prev + 1);
       setTimeout(() => {
-        setCurrentSpreadIndex((prev) => prev + 1);
-        setIsFlipping(null);
-      }, FLIP_DURATION);
+        isFlippingRef.current = false;
+      }, 750);
     }
-  }, [currentSpreadIndex, totalSpreads, isFlipping, playPageTurnSound]);
+  }, [currentSpread, totalSpreads, playPageTurnSound]);
 
-  const goToPrevSpread = useCallback(() => {
-    if (isFlipping) return;
-    if (currentSpreadIndex > 0) {
+  const handlePrev = useCallback(() => {
+    if (isFlippingRef.current) return;
+    if (currentSpread > 0) {
+      isFlippingRef.current = true;
       playPageTurnSound();
-      setIsFlipping("prev");
+      setCurrentSpread((prev) => prev - 1);
       setTimeout(() => {
-        setCurrentSpreadIndex((prev) => prev - 1);
-        setIsFlipping(null);
-      }, FLIP_DURATION);
+        isFlippingRef.current = false;
+      }, 750);
     }
-  }, [currentSpreadIndex, isFlipping, playPageTurnSound]);
+  }, [currentSpread, playPageTurnSound]);
 
   const jumpToSpread = useCallback(
-    (index) => {
-      if (index === currentSpreadIndex || isFlipping) return;
+    (targetIndex) => {
+      if (targetIndex === currentSpread || isFlippingRef.current) return;
+      isFlippingRef.current = true;
       playPageTurnSound();
-      setIsFlipping(index > currentSpreadIndex ? "next" : "prev");
+      setCurrentSpread(targetIndex);
       setTimeout(() => {
-        setCurrentSpreadIndex(index);
-        setIsFlipping(null);
-      }, FLIP_DURATION);
+        isFlippingRef.current = false;
+      }, 750);
     },
-    [currentSpreadIndex, isFlipping, playPageTurnSound]
+    [currentSpread, playPageTurnSound]
   );
 
-  // Autoplay Slideshow Timer
+  // Autoplay Slideshow
   useEffect(() => {
     if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
     if (autoPlay) {
       autoPlayTimerRef.current = setInterval(() => {
-        setCurrentSpreadIndex((prev) => {
-          if (prev < totalSpreads - 1) {
-            playPageTurnSound();
-            setIsFlipping("next");
-            setTimeout(() => {
-              setIsFlipping(null);
-            }, FLIP_DURATION);
-            return prev + 1;
-          } else {
-            setAutoPlay(false);
-            return prev;
-          }
-        });
+        if (currentSpread < totalSpreads - 1) {
+          handleNext();
+        } else {
+          jumpToSpread(0);
+        }
       }, 5500);
     }
     return () => {
       if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
     };
-  }, [autoPlay, totalSpreads, playPageTurnSound]);
+  }, [autoPlay, currentSpread, totalSpreads, handleNext, jumpToSpread]);
 
   // Keyboard navigation & ESC handler
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "ArrowRight") goToNextSpread();
-      if (e.key === "ArrowLeft") goToPrevSpread();
+      if (e.key === "ArrowRight") handleNext();
+      if (e.key === "ArrowLeft") handlePrev();
       if (e.key === " " && !lightboxPhoto) {
         e.preventDefault();
         setAutoPlay((prev) => !prev);
@@ -498,7 +506,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [goToNextSpread, goToPrevSpread, lightboxPhoto, filmstripOpen, onClose]);
+  }, [handleNext, handlePrev, lightboxPhoto, filmstripOpen, onClose]);
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
@@ -513,63 +521,13 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
 
   /**
    * Render individual page types cleanly:
-   * Faces & bodies are 100% preserved (object-fit: contain + ambient backdrop)
+   * 100% Uncropped Faces & Subjects (Aspect-Ratio Containment + Ambient Backfill)
    */
-  const renderPage = (pageData, side = "left") => {
+  const renderPageFace = (pageData, side = "left") => {
     if (!pageData) return null;
 
-    // 1. Cover Inside Front Plate
-    if (pageData.type === "inside_front_cover") {
-      return (
-        <div className="artisan-page-content inside-cover-plate">
-          <div className="plate-watermark">ARCHIVAL EDITION</div>
-          <div className="plate-header">
-            <span className="plate-badge">EDITORIAL COLLECTION</span>
-            <h2 className="plate-title">{pageData.galleryTitle}</h2>
-            <div className="plate-divider" />
-          </div>
-
-          <div
-            className="plate-description"
-            dangerouslySetInnerHTML={{
-              __html:
-                typeof pageData.description === "string" && pageData.description.trim().length > 0
-                  ? pageData.description
-                  : `<p>A curated photographic collection featuring ${pageData.photoCount} visual works. Bound and presented in high fidelity.</p>`
-            }}
-          />
-
-          <div className="plate-meta-grid">
-            <div className="plate-meta-item">
-              <span className="meta-label">Total Photographs</span>
-              <span className="meta-value">{pageData.photoCount} Fine Art Plates</span>
-            </div>
-            <div className="plate-meta-item">
-              <span className="meta-label">Curator</span>
-              <span className="meta-value">{pageData.photographer}</span>
-            </div>
-            <div className="plate-meta-item">
-              <span className="meta-label">Date Published</span>
-              <span className="meta-value">{pageData.date}</span>
-            </div>
-            <div className="plate-meta-item">
-              <span className="meta-label">Binding Style</span>
-              <span className="meta-value">Hardcover Archival</span>
-            </div>
-          </div>
-
-          <div className="plate-footer">
-            <div className="plate-stamp">
-              <Sparkles size={14} /> CERTIFIED EXHIBITION
-            </div>
-            <span className="plate-turn-hint">Turn right to open album →</span>
-          </div>
-        </div>
-      );
-    }
-
-    // 2. Cover Front Title Showcase
-    if (pageData.type === "cover_showcase") {
+    // 1. Cover Front (Outer Hardcover)
+    if (pageData.type === "cover_front") {
       return (
         <div className="artisan-page-content cover-showcase-plate">
           <div className="cover-frame-box">
@@ -588,14 +546,14 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
             </div>
           </div>
           <div className="cover-typography">
-            <span className="cover-series-tag">PORTFOLIO EDITION</span>
+            <span className="cover-series-tag">PORTFOLIO EDITION • {pageData.year}</span>
             <h1 className="cover-main-title">{pageData.galleryTitle}</h1>
             <p className="cover-subtitle">{pageData.subtitle}</p>
             <button
               className="cover-open-btn"
-              onClick={goToNextSpread}
+              onClick={handleNext}
             >
-              <span>Explore Photobook</span>
+              <span>Open Photobook</span>
               <ChevronRight size={16} />
             </button>
           </div>
@@ -603,7 +561,103 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       );
     }
 
-    // 3. EK PAGE PE 1 FULL IMAGE (Aspect-Ratio Preserved, Faces Never Cut)
+    // 2. Cover Inside Front Plate (Prologue)
+    if (pageData.type === "inside_front_cover") {
+      return (
+        <div className="artisan-page-content inside-cover-plate">
+          <div className="plate-watermark">ARCHIVAL EDITION</div>
+          <div className="plate-header">
+            <span className="plate-badge">EDITORIAL COLLECTION</span>
+            <h2 className="plate-title">{pageData.galleryTitle}</h2>
+            <div className="plate-divider" />
+          </div>
+
+          <div
+            className="plate-description"
+            dangerouslySetInnerHTML={{
+              __html:
+                typeof pageData.description === "string" && pageData.description.trim().length > 0
+                  ? pageData.description
+                  : `<p>A curated photographic collection featuring ${pageData.photoCount} visual works. Bound and presented in archival high-definition fidelity.</p>`
+            }}
+          />
+
+          <div className="plate-meta-grid">
+            <div className="plate-meta-item">
+              <span className="meta-label">Total Photographs</span>
+              <span className="meta-value">{pageData.photoCount} Fine Art Plates</span>
+            </div>
+            <div className="plate-meta-item">
+              <span className="meta-label">Curator</span>
+              <span className="meta-value">{pageData.photographer}</span>
+            </div>
+            <div className="plate-meta-item">
+              <span className="meta-label">Date Published</span>
+              <span className="meta-value">{pageData.date}</span>
+            </div>
+            <div className="plate-meta-item">
+              <span className="meta-label">Binding Style</span>
+              <span className="meta-value">Hardcover Layflat</span>
+            </div>
+          </div>
+
+          <div className="plate-footer">
+            <div className="plate-stamp">
+              <Sparkles size={14} /> CERTIFIED EXHIBITION
+            </div>
+            <span className="plate-turn-hint" onClick={handleNext}>Turn page →</span>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. CONTINUOUS 2-PAGE PANORAMA (Left or Right Half)
+    if (pageData.type === "panorama_half") {
+      const p = pageData.photo;
+      const isLeft = pageData.side === "left";
+      return (
+        <div
+          className={`page-spread-half ${isLeft ? "page-spread-left" : "page-spread-right"}`}
+          onClick={() => setLightboxPhoto(p)}
+          title="Click to view full panoramic photo"
+        >
+          {p && (
+            <>
+              <div
+                className="pano-ambient-blur"
+                style={{ backgroundImage: `url(${getMediaUrl(p.url)})` }}
+                aria-hidden="true"
+              />
+              <img
+                src={getMediaUrl(p.url)}
+                alt={p.title || "Panoramic Photo"}
+                className="pano-half-img"
+                loading="lazy"
+              />
+            </>
+          )}
+          {isLeft ? (
+            <div className="pano-badge-tag">
+              <span>2-PAGE PANORAMA</span>
+            </div>
+          ) : (
+            p?.title && (
+              <div className="pano-title-tag">
+                <span>{p.title}</span>
+              </div>
+            )
+          )}
+          <button className="photo-zoom-icon" aria-label="Zoom photo">
+            <ZoomIn size={14} />
+          </button>
+          <div className={`page-number-tag light-tag ${isLeft ? "left" : "right"}`}>
+            {pageData.pageNumber}
+          </div>
+        </div>
+      );
+    }
+
+    // 4. EK PAGE PE 1 FULL IMAGE (Aspect-Ratio Preserved, Faces Never Cut)
     if (pageData.type === "full_single") {
       const p = pageData.photo;
       return (
@@ -644,7 +698,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       );
     }
 
-    // 4. EK PAGE PE 2 FULL IMAGES (Split with Aspect-Ratio Preserved, Faces Never Cut)
+    // 5. EK PAGE PE 2 FULL IMAGES (Split with Aspect-Ratio Preserved, Faces Never Cut)
     if (pageData.type === "full_dual") {
       const [p1, p2] = pageData.photos || [];
       return (
@@ -716,7 +770,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       );
     }
 
-    // 5. Colophon / Epilogue Plate
+    // 6. Colophon / Epilogue Plate
     if (pageData.type === "colophon") {
       return (
         <div className="artisan-page-content colophon-plate">
@@ -759,7 +813,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       );
     }
 
-    // 6. Back Cover Plate
+    // 7. Back Cover Plate
     if (pageData.type === "back_cover") {
       return (
         <div className="artisan-page-content back-cover-plate">
@@ -773,6 +827,21 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
               <div className="barcode-lines" />
               <span className="barcode-num">CMS-PHOTO-ALBUM-2026</span>
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 8. Outer Back Cover
+    if (pageData.type === "outer_back_cover") {
+      return (
+        <div className="artisan-page-content back-cover-plate">
+          <div className="back-cover-emboss">
+            <div className="back-cover-logo">
+              <BookOpen size={36} />
+            </div>
+            <h3 className="back-cover-title">{pageData.galleryTitle}</h3>
+            <span className="back-cover-edition">LUMEN EDITIONS • ARCHIVAL CASING</span>
           </div>
         </div>
       );
@@ -812,37 +881,22 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
             </h2>
             <div className="topbar-meta-tags">
               <span className="meta-pill">
-                Spread {currentSpreadIndex + 1} of {totalSpreads}
+                Spread {currentSpread + 1} of {totalSpreads}
               </span>
               <span className="meta-pill photos-count">
                 {photos.length} Photos
               </span>
-              {currentSpread?.badge && (
+              {currentSpreadData?.badge && (
                 <span className="meta-pill layout-badge">
-                  {currentSpread.badge}
+                  {currentSpreadData.badge}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Center: Quick Progress Bar & Binding Switcher */}
+        {/* Center: Timeline Progress Bar */}
         <div className="topbar-center">
-          <div className="binding-toggle-group" title="Switch Book Binding Style">
-            <button
-              className={`binding-btn ${bindingType === "hardcover" ? "active" : ""}`}
-              onClick={() => setBindingType("hardcover")}
-            >
-              Hardcover
-            </button>
-            <button
-              className={`binding-btn ${bindingType === "spiral" ? "active" : ""}`}
-              onClick={() => setBindingType("spiral")}
-            >
-              Spiral Wire
-            </button>
-          </div>
-
           <div
             className="spread-progress-bar-wrap"
             onClick={(e) => {
@@ -855,7 +909,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
           >
             <div
               className="spread-progress-bar-fill"
-              style={{ width: `${((currentSpreadIndex + 1) / totalSpreads) * 100}%` }}
+              style={{ width: `${((currentSpread + 1) / totalSpreads) * 100}%` }}
             />
           </div>
         </div>
@@ -914,9 +968,9 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
       <main className="artisan-book-stage">
         {/* Floating Prev Button */}
         <button
-          className={`book-nav-arrow arrow-left ${currentSpreadIndex === 0 ? "disabled" : ""}`}
-          onClick={goToPrevSpread}
-          disabled={currentSpreadIndex === 0 || !!isFlipping}
+          className={`book-nav-arrow arrow-left ${currentSpread === 0 ? "disabled" : ""}`}
+          onClick={handlePrev}
+          disabled={currentSpread === 0}
           aria-label="Previous Page"
           title="Previous Page (Left Arrow)"
         >
@@ -925,9 +979,9 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
 
         {/* Floating Next Button */}
         <button
-          className={`book-nav-arrow arrow-right ${currentSpreadIndex === totalSpreads - 1 ? "disabled" : ""}`}
-          onClick={goToNextSpread}
-          disabled={currentSpreadIndex === totalSpreads - 1 || !!isFlipping}
+          className={`book-nav-arrow arrow-right ${currentSpread === totalSpreads - 1 ? "disabled" : ""}`}
+          onClick={handleNext}
+          disabled={currentSpread === totalSpreads - 1}
           aria-label="Next Page"
           title="Next Page (Right Arrow)"
         >
@@ -936,8 +990,8 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
 
         {/* 3D BOOK STRUCTURE */}
         <div
-          className={`artisan-book-casing binding-${bindingType} ${
-            isBookOpening ? "book-opening" : ""
+          className={`artisan-book-casing ${
+            currentSpreadData.type === "panorama_spread" ? "is-panorama-casing" : ""
           }`}
         >
           {/* Stacked Paper Edges */}
@@ -949,145 +1003,65 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
             <div className="ribbon-tail" />
           </div>
 
-          {/* THE BOOK BODY */}
+          {/* Deep Spine Groove behind pages (Hidden on panorama spreads) */}
+          <div className="spine-deep-crease" />
+
+          {/* Left & Right Page Turning Hotspots / Click Zones */}
+          <div
+            className="flip-hotspot-left"
+            onClick={handlePrev}
+            title="Click to flip backward"
+          >
+            <div className="corner-curl-hint">
+              <ChevronLeft size={18} />
+            </div>
+          </div>
+          <div
+            className="flip-hotspot-right"
+            onClick={handleNext}
+            title="Click to flip forward"
+          >
+            <div className="corner-curl-hint">
+              <ChevronRight size={18} />
+            </div>
+          </div>
+
+          {/* THE 3D LEAF SYSTEM */}
           <div
             className={`artisan-book-pages ${
-              currentSpread.type === "panorama_spread" ? "is-panorama-spread" : ""
-            } ${isFlipping ? `is-flipping-${isFlipping}` : ""}`}
+              currentSpreadData.type === "panorama_spread" ? "is-panorama-spread" : ""
+            }`}
           >
-            {currentSpread.type === "panorama_spread" ? (
-              /* SEAMLESS 2-PAGE SPREAD (NO CENTER LINE CUTTING THE IMAGE) */
-              <div
-                className="artisan-spread-panorama-full"
-                onClick={() => setLightboxPhoto(currentSpread.photo)}
-                title="Click to view full panoramic photo"
-              >
-                {/* Ambient background */}
+            {leaves.map((leaf, idx) => {
+              const isFlipped = idx < currentSpread;
+              const zIndex = isFlipped ? idx + 1 : totalLeaves - idx + 1;
+
+              return (
                 <div
-                  className="pano-ambient-bg"
-                  style={{ backgroundImage: `url(${getMediaUrl(currentSpread.photo?.url)})` }}
-                  aria-hidden="true"
-                />
-                {/* Full uncropped photo across both pages */}
-                <img
-                  src={getMediaUrl(currentSpread.photo?.url)}
-                  alt={currentSpread.photo?.title || "Panoramic Photo"}
-                  className="pano-full-spread-img"
-                  loading="lazy"
-                />
-                <div className="pano-badge-tag">
-                  <span>2-PAGE PANORAMA</span>
-                </div>
-                {currentSpread.photo?.title && (
-                  <div className="pano-title-tag">
-                    <span>{currentSpread.photo.title}</span>
-                  </div>
-                )}
-                <button className="photo-zoom-icon" aria-label="Zoom full photo">
-                  <ZoomIn size={16} />
-                </button>
-                <div className="page-number-tag light-tag left">
-                  {currentSpread.startPage}
-                </div>
-                <div className="page-number-tag light-tag right">
-                  {currentSpread.endPage}
-                </div>
-              </div>
-            ) : (
-              /* REGULAR 2-PAGE SPREAD WITH 3D PAGE TURNING ENGINE */
-              <>
-                {/* STATIC LEFT PAGE */}
-                <div
-                  className="artisan-page page-left"
-                  onClick={() => {
-                    if (currentSpreadIndex > 0 && !isFlipping) goToPrevSpread();
-                  }}
+                  key={leaf.id}
+                  className={`book-leaf ${isFlipped ? "flipped" : ""}`}
+                  style={{ zIndex }}
                 >
-                  <div className="page-paper-surface">
-                    {renderPage(
-                      isFlipping === "prev" && spreads[currentSpreadIndex - 1]
-                        ? spreads[currentSpreadIndex - 1].leftPage
-                        : currentSpread.leftPage,
-                      "left"
-                    )}
+                  {/* FRONT FACE (Visible on Right side when unflipped) */}
+                  <div
+                    className={`page-face page-front ${
+                      leaf.isCover ? "cover-front-face" : ""
+                    }`}
+                  >
+                    {renderPageFace(leaf.front, "right")}
                   </div>
-                  <div className="page-gutter-shadow left-gutter" />
-                  <div className="page-turn-hint-corner corner-left" title="Click to go back">
-                    <ChevronLeft size={16} />
+
+                  {/* BACK FACE (Visible on Left side when flipped) */}
+                  <div
+                    className={`page-face page-back ${
+                      leaf.isLast ? "cover-back-face" : ""
+                    }`}
+                  >
+                    {renderPageFace(leaf.back, "left")}
                   </div>
                 </div>
-
-                {/* CENTER BINDING (Only present on non-panorama spreads) */}
-                {bindingType === "spiral" ? (
-                  <SpiralCoilBinding height={650} />
-                ) : (
-                  <div className="artisan-center-spine" aria-hidden="true">
-                    <div className="spine-deep-crease" />
-                  </div>
-                )}
-
-                {/* STATIC RIGHT PAGE */}
-                <div
-                  className="artisan-page page-right"
-                  onClick={() => {
-                    if (currentSpreadIndex < totalSpreads - 1 && !isFlipping) goToNextSpread();
-                  }}
-                >
-                  <div className="page-paper-surface">
-                    {renderPage(
-                      isFlipping === "next" && spreads[currentSpreadIndex + 1]
-                        ? spreads[currentSpreadIndex + 1].rightPage
-                        : currentSpread.rightPage,
-                      "right"
-                    )}
-                  </div>
-                  <div className="page-gutter-shadow right-gutter" />
-                  <div className="page-turn-hint-corner corner-right" title="Click to go next">
-                    <ChevronRight size={16} />
-                  </div>
-                </div>
-
-                {/* 3D TURNING LEAF: FORWARD FLIP (Turns from right to left) */}
-                {isFlipping === "next" && spreads[currentSpreadIndex + 1] && (
-                  <div className="artisan-turning-leaf turning-forward" aria-hidden="true">
-                    <div className="leaf-face leaf-front">
-                      <div className="page-paper-surface">
-                        {renderPage(currentSpread.rightPage, "right")}
-                      </div>
-                      <div className="leaf-fold-highlight" />
-                      <div className="leaf-sweep-shadow" />
-                    </div>
-                    <div className="leaf-face leaf-back">
-                      <div className="page-paper-surface">
-                        {renderPage(spreads[currentSpreadIndex + 1].leftPage, "left")}
-                      </div>
-                      <div className="leaf-fold-highlight" />
-                      <div className="leaf-sweep-shadow" />
-                    </div>
-                  </div>
-                )}
-
-                {/* 3D TURNING LEAF: BACKWARD FLIP (Turns from left to right) */}
-                {isFlipping === "prev" && spreads[currentSpreadIndex - 1] && (
-                  <div className="artisan-turning-leaf turning-backward" aria-hidden="true">
-                    <div className="leaf-face leaf-front">
-                      <div className="page-paper-surface">
-                        {renderPage(spreads[currentSpreadIndex - 1].rightPage, "right")}
-                      </div>
-                      <div className="leaf-fold-highlight" />
-                      <div className="leaf-sweep-shadow" />
-                    </div>
-                    <div className="leaf-face leaf-back">
-                      <div className="page-paper-surface">
-                        {renderPage(currentSpread.leftPage, "left")}
-                      </div>
-                      <div className="leaf-fold-highlight" />
-                      <div className="leaf-sweep-shadow" />
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+              );
+            })}
           </div>
         </div>
       </main>
@@ -1109,9 +1083,9 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
 
         <div className="filmstrip-scroll-row">
           {spreads.map((spread, idx) => {
-            const isActive = idx === currentSpreadIndex;
+            const isActive = idx === currentSpread;
             const previewImg =
-              spread.photo?.url ||
+              spread.frontCover?.coverImage ||
               spread.leftPage?.photo?.url ||
               spread.leftPage?.photos?.[0]?.url ||
               spread.rightPage?.photo?.url ||
@@ -1153,7 +1127,7 @@ const BookGalleryLayout = ({ gallery, onClose }) => {
           title="Open thumbnails filmstrip"
         >
           <Grid size={15} />
-          <span>Page Navigator ({currentSpreadIndex + 1}/{totalSpreads})</span>
+          <span>Page Navigator ({currentSpread + 1}/{totalSpreads})</span>
         </button>
       )}
 
