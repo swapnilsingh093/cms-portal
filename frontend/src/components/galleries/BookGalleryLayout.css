@@ -125,6 +125,11 @@
   background: rgba(234, 88, 12, 0.15);
 }
 
+.meta-pill.layout-badge {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+}
+
 /* Center Binding switcher & Progress line */
 .topbar-center {
   display: flex;
@@ -862,376 +867,190 @@
 }
 
 /* ==========================================================================
-   SPREAD LAYOUT 2: MUSEUM PASSE-PARTOUT MATTE FRAME
+   LAYOUT STYLE 1: 2 PAGES PE 1 FULL IMAGE (CROSS-SPREAD PANORAMA)
    ========================================================================== */
-.framed-photo-plate {
-  padding: 36px 40px;
-  height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.photo-matte-frame {
-  width: 90%;
-  max-height: 92%;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 4px;
-  box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-.framed-image-wrapper {
+.panorama-half-page {
   position: relative;
   width: 100%;
-  height: 440px;
-  max-height: calc(100vh - 280px);
+  height: 100%;
   overflow: hidden;
-  border-radius: 2px;
   cursor: zoom-in;
-  background: #111;
+  background: #000000;
 }
 
-.matte-img {
-  width: 100%;
+.pano-spread-img {
+  position: absolute;
+  top: 0;
+  width: 200%;
   height: 100%;
-  object-fit: contain;
-  background: #0f0d14;
+  object-fit: cover;
+  display: block;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.framed-image-wrapper:hover .matte-img {
+.pano-spread-left {
+  left: 0;
+}
+
+.pano-spread-right {
+  left: -100%;
+}
+
+.panorama-half-page:hover .pano-spread-img {
   transform: scale(1.02);
 }
 
-.matte-caption {
-  margin-top: 14px;
-  text-align: center;
+.pano-badge-tag {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fdba74;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.pano-title-tag {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 14px;
+  font-style: italic;
+  padding: 6px 14px;
+  border-radius: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   LAYOUT STYLE 2: EK PAGE PE 1 FULL IMAGE (FULL WIDTH & HEIGHT EDGE-TO-EDGE)
+   ========================================================================== */
+.full-bleed-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: #000000;
+}
+
+.full-page-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.full-bleed-page:hover .full-page-hero-img {
+  transform: scale(1.025);
+}
+
+.full-page-gradient-tint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.full-page-caption-pill {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  right: 24px;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  pointer-events: none;
 }
 
-.matte-title {
+.caption-title {
   font-family: 'Newsreader', Georgia, serif;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
-  color: #1c1917;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
 }
 
-.matte-desc {
+.caption-sub {
   font-size: 12px;
-  color: #78716c;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
 }
 
 /* ==========================================================================
-   SPREAD LAYOUT 3: FULL PAGE BLEED MASTER PRINT
+   LAYOUT STYLE 3: EK PAGE PE 2 FULL IMAGES (FULL WIDTH & HEIGHT SPLIT)
    ========================================================================== */
-.hero-bleed-plate {
+.dual-full-page {
   position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #000000;
 }
 
-.bleed-image-wrapper {
-  position: relative;
+.dual-half-block {
+  flex: 1;
   width: 100%;
-  height: 100%;
+  height: 50%;
+  position: relative;
+  overflow: hidden;
   cursor: zoom-in;
 }
 
-.bleed-img {
+.dual-half-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bleed-gradient-overlay {
+.dual-half-block:hover .dual-half-img {
+  transform: scale(1.03);
+}
+
+.dual-split-seam {
+  height: 3px;
+  background: #07060b;
+  z-index: 5;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.dual-gradient-tint {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 45%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, transparent 45%);
+  pointer-events: none;
 }
 
-.bleed-caption-box {
+.dual-caption-overlay {
   position: absolute;
-  bottom: 38px;
-  left: 32px;
-  right: 32px;
-  color: #ffffff;
-  z-index: 5;
-}
-
-.bleed-badge {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #fb923c;
-}
-
-.bleed-photo-title {
-  font-family: 'Newsreader', Georgia, serif;
-  font-size: 22px;
-  font-weight: 600;
-  margin: 4px 0;
-  color: #ffffff;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
-}
-
-.bleed-photo-desc {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0;
-}
-
-/* ==========================================================================
-   SPREAD LAYOUT 4: DUAL STACKED PHOTOS
-   ========================================================================== */
-.dual-stacked-plate {
-  padding: 32px 36px;
-  height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  justify-content: center;
-}
-
-.dual-item-box {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  cursor: zoom-in;
-}
-
-.dual-img-crop {
-  position: relative;
-  width: 100%;
-  height: 240px;
-  max-height: 42vh;
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-  background: #111;
-}
-
-.dual-img-crop img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.dual-img-crop:hover img {
-  transform: scale(1.03);
-}
-
-.dual-item-title {
-  font-family: 'Newsreader', Georgia, serif;
-  font-size: 13px;
-  font-style: italic;
-  color: #57534e;
-  margin-top: 6px;
-  text-align: center;
-}
-
-/* ==========================================================================
-   SPREAD LAYOUT 5: POLAROID VINTAGE MEMORIES
-   ========================================================================== */
-.polaroids-plate {
-  padding: 36px 32px;
-  height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-}
-
-.polaroid-card {
-  position: relative;
-  background: #ffffff;
-  padding: 12px 12px 28px 12px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-  border-radius: 2px;
-  cursor: zoom-in;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  width: 82%;
-  max-width: 320px;
-}
-
-.polaroid-left {
-  transform: rotate(-2.5deg);
-}
-
-.polaroid-right {
-  transform: rotate(2.2deg);
-}
-
-.polaroid-card:hover {
-  transform: scale(1.04) rotate(0deg);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
+  bottom: 12px;
+  left: 16px;
+  right: 16px;
   z-index: 10;
-}
-
-.polaroid-tape {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 50px;
-  height: 16px;
-  background: rgba(234, 215, 175, 0.55);
-  backdrop-filter: blur(2px);
-  border-radius: 2px;
-}
-
-.polaroid-frame {
-  width: 100%;
-  height: 175px;
-  overflow: hidden;
-  background: #111;
-}
-
-.polaroid-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.polaroid-caption {
-  display: block;
   font-family: 'Newsreader', Georgia, serif;
+  font-size: 14px;
+  color: #ffffff;
   font-style: italic;
-  font-size: 13px;
-  color: #44403c;
-  text-align: center;
-  margin-top: 10px;
-}
-
-/* ==========================================================================
-   SPREAD LAYOUT 6: EDITORIAL STORY & QUOTE
-   ========================================================================== */
-.editorial-plate {
-  padding: 40px;
-  height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.editorial-photo-box {
-  position: relative;
-  width: 100%;
-  height: 350px;
-  max-height: calc(100vh - 350px);
-  border-radius: 6px;
-  overflow: hidden;
-  cursor: zoom-in;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
-}
-
-.editorial-photo-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.editorial-photo-box:hover img {
-  transform: scale(1.02);
-}
-
-.editorial-text-box {
-  margin-top: 24px;
-}
-
-.editorial-quote {
-  font-family: 'Newsreader', Georgia, serif;
-  font-size: 18px;
-  font-style: italic;
-  line-height: 1.45;
-  color: #292524;
-  margin: 0 0 12px 0;
-  border-left: 3px solid #ea580c;
-  padding-left: 14px;
-}
-
-.editorial-byline {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.byline-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1c1917;
-}
-
-.byline-role {
-  font-size: 12px;
-  color: #78716c;
-}
-
-/* ==========================================================================
-   SPREAD LAYOUT 7: TRIPTYCH MOSAIC
-   ========================================================================== */
-.triptych-plate {
-  padding: 32px;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.triptych-grid {
-  display: flex;
-  gap: 14px;
-  height: 92%;
-}
-
-.trip-cell {
-  position: relative;
-  border-radius: 6px;
-  overflow: hidden;
-  cursor: zoom-in;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-  background: #111;
-}
-
-.trip-cell img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.trip-cell:hover img {
-  transform: scale(1.03);
-}
-
-.cell-tall {
-  flex: 1.2;
-  height: 100%;
-}
-
-.trip-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  height: 100%;
-}
-
-.cell-stacked {
-  flex: 1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
 }
 
 /* ==========================================================================
